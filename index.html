@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>SILICON REIGN — El juego de la startup de IA</title>
 <style>
   :root {
@@ -12,6 +12,7 @@
     --text: #e8eaf6;
     --muted: #8a90b8;
     --accent: #7c6cff;
+    --accent2: #38bdf8;
     --good: #4ade80;
     --bad: #f87171;
     --gold: #fbbf24;
@@ -19,7 +20,7 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-  html, body { height: 100%; overflow: hidden; }
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
   body {
     background: radial-gradient(ellipse at 50% -20%, #1c2240 0%, var(--bg) 60%);
@@ -32,34 +33,89 @@
     -webkit-user-select: none;
   }
 
+  /* orbes decorativos de fondo */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: .22;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    background: var(--accent);
+    top: -80px; left: -100px;
+    animation: orb1 16s ease-in-out infinite alternate;
+  }
+  body::after {
+    background: var(--accent2);
+    bottom: -120px; right: -120px;
+    animation: orb2 20s ease-in-out infinite alternate;
+  }
+  @keyframes orb1 { from { transform: translate(0,0); } to { transform: translate(60px, 40px); } }
+  @keyframes orb2 { from { transform: translate(0,0); } to { transform: translate(-50px, -60px); } }
+
   #game {
     width: 100%;
     max-width: 420px;
-    height: 100%;
-    max-height: 860px;
+    height: 100dvh;
+    max-height: 880px;
     display: flex;
     flex-direction: column;
-    padding: 12px 16px;
+    padding: calc(8px + env(safe-area-inset-top)) 14px calc(8px + env(safe-area-inset-bottom));
     position: relative;
+    z-index: 1;
   }
 
   /* ---------- Header / stats ---------- */
-  header { text-align: center; padding: 4px 0 10px; }
+  header { position: relative; text-align: center; padding: 6px 0 8px; }
 
   header h1 {
-    font-size: 15px;
+    font-size: clamp(14px, 4vw, 16px);
     letter-spacing: 4px;
-    color: var(--accent);
     font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  header .sub { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+  header .sub { font-size: 9.5px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+
+  #lang-toggle {
+    position: absolute;
+    top: 2px;
+    right: 0;
+    display: flex;
+    border: 1px solid var(--card-border);
+    border-radius: 9px;
+    overflow: hidden;
+    background: rgba(24,28,46,.7);
+  }
+  #lang-toggle button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 5px 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  #lang-toggle button.active {
+    background: var(--accent);
+    color: #fff;
+  }
 
   #stats {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    padding: 10px 4px 6px;
+    gap: 8px;
+    padding: 8px 2px 6px;
   }
 
   .stat {
@@ -68,9 +124,14 @@
     flex-direction: column;
     align-items: center;
     gap: 5px;
+    position: relative;
+    background: rgba(24,28,46,.55);
+    border: 1px solid rgba(42,48,80,.7);
+    border-radius: 12px;
+    padding: 7px 6px 8px;
   }
 
-  .stat .icon { font-size: 22px; position: relative; transition: transform .2s; }
+  .stat .icon { font-size: 21px; position: relative; transition: transform .2s; }
 
   .stat .dot {
     position: absolute;
@@ -99,9 +160,27 @@
     width: 50%;
     border-radius: 4px;
     transition: width .5s cubic-bezier(.22,1,.36,1), background .3s;
+    box-shadow: 0 0 8px rgba(255,255,255,.15);
   }
 
+  .stat.danger { border-color: rgba(248,113,113,.55); }
   .stat.danger .icon { animation: pulse 1s infinite; }
+
+  .stat .delta {
+    position: absolute;
+    top: -6px;
+    right: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    pointer-events: none;
+    animation: rise .95s ease-out forwards;
+    text-shadow: 0 2px 6px rgba(0,0,0,.6);
+  }
+  @keyframes rise {
+    0%   { opacity: 0; transform: translateY(8px); }
+    25%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-16px); }
+  }
 
   @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -116,41 +195,29 @@
     justify-content: center;
     align-items: center;
     min-height: 0;
+    padding: 6px 0;
   }
 
-  .choice-hint {
-    position: absolute;
-    top: 8px;
-    max-width: 42%;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    background: rgba(124,108,255,.18);
-    border: 1px solid var(--accent);
-    padding: 8px 12px;
-    border-radius: 10px;
-    opacity: 0;
-    transition: opacity .15s;
-    pointer-events: none;
-    z-index: 5;
+  #card-stack {
+    position: relative;
+    width: min(86vw, 310px);
+    height: 100%;
+    max-height: 430px;
   }
-  .choice-hint.left  { left: 4px;  text-align: left; }
-  .choice-hint.right { right: 4px; text-align: right; }
-  .choice-hint.show { opacity: 1; }
-
-  #card-stack { position: relative; width: 300px; height: 420px; max-height: 100%; }
 
   .card {
     position: absolute;
     inset: 0;
-    background: linear-gradient(160deg, #1d2240 0%, var(--card-bg) 55%);
-    border: 1px solid var(--card-border);
-    border-radius: 18px;
-    box-shadow: 0 18px 50px rgba(0,0,0,.55);
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background:
+      linear-gradient(160deg, #1f2546 0%, var(--card-bg) 55%) padding-box,
+      linear-gradient(160deg, rgba(124,108,255,.55), rgba(56,189,248,.18) 45%, rgba(124,108,255,.08)) border-box;
+    box-shadow: 0 18px 50px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.04);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 26px 22px 20px;
+    padding: 22px 20px 18px;
     cursor: grab;
     touch-action: none;
     will-change: transform;
@@ -167,9 +234,17 @@
   .card.entering  { transition: transform .35s cubic-bezier(.22,1,.36,1), filter .35s; }
 
   .card .portrait {
-    font-size: 78px;
-    line-height: 1;
-    margin-bottom: 10px;
+    font-size: clamp(56px, 16vw, 72px);
+    line-height: 1.4;
+    width: clamp(80px, 24vw, 104px);
+    height: clamp(80px, 24vw, 104px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(124,108,255,.3), rgba(56,189,248,.08) 70%);
+    border: 1px solid rgba(124,108,255,.3);
+    margin-bottom: 12px;
     filter: drop-shadow(0 6px 16px rgba(124,108,255,.35));
   }
 
@@ -179,56 +254,98 @@
     letter-spacing: 2.5px;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 14px;
+    margin-bottom: 12px;
     text-align: center;
+    text-wrap: balance;
   }
 
   .card .text {
     flex: 1;
-    font-size: 16.5px;
+    font-size: clamp(14px, 4.2vw, 16.5px);
     line-height: 1.5;
     text-align: center;
     display: flex;
     align-items: center;
     color: var(--text);
+    text-wrap: pretty;
   }
 
-  .card .swipe-tip {
-    font-size: 10.5px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    margin-top: 12px;
-  }
-
-  /* stamp overlays on the card while dragging */
+  /* sellos al arrastrar */
   .card .stamp {
     position: absolute;
-    top: 18px;
-    font-size: 13px;
+    top: 16px;
+    max-width: 58%;
+    font-size: 12px;
     font-weight: 800;
-    letter-spacing: 2px;
-    padding: 5px 12px;
+    letter-spacing: 1.5px;
+    padding: 5px 11px;
     border-radius: 8px;
     border: 2px solid;
     opacity: 0;
-    transform: rotate(-12deg);
+    text-align: center;
+    text-wrap: balance;
+    overflow-wrap: normal;
+    hyphens: none;
   }
-  .card .stamp.no  { left: 16px;  color: var(--bad);  border-color: var(--bad);  transform: rotate(-12deg); }
-  .card .stamp.yes { right: 16px; color: var(--good); border-color: var(--good); transform: rotate(12deg); }
+  .card .stamp.no  { left: 14px;  color: var(--bad);  border-color: var(--bad);  transform: rotate(-10deg); }
+  .card .stamp.yes { right: 14px; color: var(--good); border-color: var(--good); transform: rotate(10deg); }
+
+  /* ---------- Botones de opción ---------- */
+  #choices {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0 4px;
+  }
+
+  .choice-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 60px;
+    border-radius: 14px;
+    border: 1px solid;
+    background: rgba(24,28,46,.7);
+    color: var(--text);
+    font-family: inherit;
+    font-size: clamp(12px, 3.4vw, 13.5px);
+    font-weight: 600;
+    line-height: 1.3;
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-align: center;
+    transition: transform .12s, background .15s, box-shadow .15s;
+  }
+  .choice-btn .dir { font-size: 11px; opacity: .55; line-height: 1; }
+  .choice-btn .lbl {
+    display: block;
+    text-wrap: balance;       /* reparte los saltos de línea de forma equilibrada */
+    overflow-wrap: normal;    /* nunca parte palabras */
+    hyphens: none;
+  }
+  .choice-btn:active { transform: scale(.97); }
+
+  #choice-left  { border-color: rgba(248,113,113,.45); }
+  #choice-right { border-color: rgba(74,222,128,.45); }
+  #choice-left.active,  #choice-left:active  { background: rgba(248,113,113,.16); box-shadow: 0 0 18px rgba(248,113,113,.2); }
+  #choice-right.active, #choice-right:active { background: rgba(74,222,128,.16);  box-shadow: 0 0 18px rgba(74,222,128,.2); }
 
   /* ---------- Footer ---------- */
   footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 6px 4px;
+    padding: 8px 4px 2px;
     font-size: 12px;
     color: var(--muted);
   }
 
   footer .ceo-name { color: var(--gold); font-weight: 700; }
 
-  /* ---------- Screens (intro / game over) ---------- */
+  /* ---------- Pantallas (intro / game over) ---------- */
   .screen {
     position: absolute;
     inset: 0;
@@ -240,47 +357,99 @@
     justify-content: center;
     align-items: center;
     text-align: center;
-    padding: 32px;
-    gap: 18px;
+    padding: 28px 26px;
+    gap: 14px;
     opacity: 1;
     transition: opacity .4s;
+    overflow-y: auto;
   }
   .screen.hidden { opacity: 0; pointer-events: none; }
 
-  .screen .big-emoji { font-size: 90px; line-height: 1; }
+  .screen .big-emoji { font-size: clamp(64px, 20vw, 88px); line-height: 1; }
 
   .screen h2 {
-    font-size: 24px;
+    font-size: clamp(20px, 6vw, 24px);
     letter-spacing: 3px;
-    color: var(--accent);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .screen p { font-size: 15px; line-height: 1.6; color: var(--text); max-width: 320px; }
-  .screen .detail { font-size: 13px; color: var(--muted); }
+  .screen p { font-size: clamp(13px, 3.8vw, 15px); line-height: 1.6; color: var(--text); max-width: 320px; text-wrap: pretty; }
+  .screen .detail { font-size: clamp(11.5px, 3.3vw, 13px); color: var(--muted); }
 
-  .screen button {
-    margin-top: 8px;
-    background: var(--accent);
+  .pick-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  #name-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .name-btn {
+    border: 1px solid var(--card-border);
+    background: rgba(24,28,46,.8);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 12px 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: border-color .15s, background .15s, transform .12s;
+  }
+  .name-btn .ne { font-size: 22px; line-height: 1; }
+  .name-btn:active { transform: scale(.97); }
+  .name-btn.selected {
+    border-color: var(--accent);
+    background: rgba(124,108,255,.18);
+    box-shadow: 0 0 18px rgba(124,108,255,.25);
+  }
+
+  .screen .cta {
+    margin-top: 6px;
+    background: linear-gradient(135deg, var(--accent), #5a8df0);
     color: #fff;
     border: none;
+    font-family: inherit;
     font-size: 15px;
     font-weight: 700;
     letter-spacing: 1.5px;
     padding: 14px 38px;
-    border-radius: 12px;
+    border-radius: 14px;
     cursor: pointer;
     box-shadow: 0 8px 24px rgba(124,108,255,.4);
     transition: transform .15s;
   }
-  .screen button:hover { transform: scale(1.05); }
+  .screen .cta:hover { transform: scale(1.05); }
+  .screen .cta:active { transform: scale(.97); }
 
-  #gameover-screen h2 { color: var(--bad); }
-  #gameover-screen .score { color: var(--gold); font-size: 17px; font-weight: 700; }
+  #gameover-screen h2 {
+    background: none;
+    -webkit-text-fill-color: var(--bad);
+    color: var(--bad);
+  }
+  #gameover-screen .score { color: var(--gold); font-size: clamp(14px, 4vw, 17px); font-weight: 700; }
 
-  @media (max-height: 640px) {
-    .card .portrait { font-size: 58px; }
-    .card .text { font-size: 14.5px; }
-    #card-stack { height: 340px; }
+  @media (max-height: 660px) {
+    .card .portrait { font-size: 48px; width: 72px; height: 72px; margin-bottom: 8px; }
+    .card .text { font-size: 13.5px; }
+    #card-stack { max-height: 330px; }
+    .stat .icon { font-size: 18px; }
+    .screen { gap: 10px; }
   }
 </style>
 </head>
@@ -289,7 +458,11 @@
 <div id="game">
   <header>
     <h1>SILICON REIGN</h1>
-    <div class="sub">SOBREVIVE COMO CEO DE UNA STARTUP DE IA</div>
+    <div class="sub" id="subtitle"></div>
+    <div id="lang-toggle">
+      <button data-lang="es">ES</button>
+      <button data-lang="en">EN</button>
+    </div>
   </header>
 
   <div id="stats">
@@ -312,23 +485,28 @@
   </div>
 
   <div id="card-area">
-    <div class="choice-hint left" id="hint-left"></div>
-    <div class="choice-hint right" id="hint-right"></div>
     <div id="card-stack"></div>
   </div>
 
+  <div id="choices">
+    <button class="choice-btn" id="choice-left"><span class="dir">←</span><span class="lbl"></span></button>
+    <button class="choice-btn" id="choice-right"><span class="dir">→</span><span class="lbl"></span></button>
+  </div>
+
   <footer>
-    <span class="ceo-name">CEO Anónimo</span>
-    <span id="day-counter">Mes 1</span>
+    <span class="ceo-name" id="ceo-name"></span>
+    <span id="day-counter"></span>
   </footer>
 
   <!-- Intro -->
   <div class="screen" id="intro-screen">
     <div class="big-emoji">🤖</div>
     <h2>SILICON REIGN</h2>
-    <p>Acabas de fundar <strong>NeuralCorp</strong>, la startup de IA más prometedora del valle. Inversores, reguladores, ingenieros y tu propio modelo pondrán a prueba tu liderazgo.</p>
-    <p class="detail">Desliza la carta a la <strong>izquierda</strong> o a la <strong>derecha</strong> para decidir (también con las flechas ← →).<br><br>Mantén las 4 barras en equilibrio: si una llega a 0 o se desborda al 100%… se acabó.</p>
-    <button id="start-btn">FUNDAR LA EMPRESA</button>
+    <div class="pick-label" id="pick-label"></div>
+    <div id="name-grid"></div>
+    <p id="intro-text"></p>
+    <p class="detail" id="intro-detail"></p>
+    <button class="cta" id="start-btn"></button>
   </div>
 
   <!-- Game over -->
@@ -337,7 +515,7 @@
     <h2 id="go-title">GAME OVER</h2>
     <p id="go-text"></p>
     <p class="score" id="go-score"></p>
-    <button id="restart-btn">FUNDAR OTRA STARTUP</button>
+    <button class="cta" id="restart-btn"></button>
   </div>
 </div>
 
@@ -345,18 +523,52 @@
 'use strict';
 
 /* =====================================================
+   Idioma  — los textos bilingües son arrays [es, en]
+   ===================================================== */
+let lang = localStorage.getItem('sr-lang') || 'es';
+const li = () => lang === 'en' ? 1 : 0;
+const T = v => Array.isArray(v) ? v[li()] : v;
+
+const UI = {
+  subtitle:   ['SOBREVIVE COMO CEO DE UNA STARTUP DE IA', 'SURVIVE AS THE CEO OF AN AI STARTUP'],
+  month:      ['Mes', 'Month'],
+  ceoOf:      ['CEO de', 'CEO of'],
+  pickLabel:  ['Elige el nombre de tu startup', 'Pick your startup’s name'],
+  introText:  [
+    'Acabas de fundar <strong>{name}</strong>, la startup de IA más prometedora del valle. Inversores, reguladores, ingenieros y tu propio modelo pondrán a prueba tu liderazgo.',
+    'You’ve just founded <strong>{name}</strong>, the most promising AI startup in the valley. Investors, regulators, engineers and your own model will put your leadership to the test.',
+  ],
+  introDetail: [
+    'Desliza la carta a la izquierda o a la derecha, toca uno de los dos botones o usa las flechas ← →.<br><br>Mantén las 4 barras en equilibrio: si una llega a 0 o se desborda al 100%… se acabó.',
+    'Swipe the card left or right, tap one of the two buttons, or use the ← → arrow keys.<br><br>Keep the 4 bars balanced: if one hits 0 or overflows to 100%… it’s over.',
+  ],
+  start:      ['FUNDAR LA EMPRESA', 'FOUND THE COMPANY'],
+  restart:    ['FUNDAR OTRA STARTUP', 'FOUND ANOTHER STARTUP'],
+  survived:   ['Sobreviviste {n} {m} como CEO de {name}', 'You survived {n} {m} as CEO of {name}'],
+  monthOne:   ['mes', 'month'],
+  monthMany:  ['meses', 'months'],
+};
+
+const NAMES = [
+  { name: 'NeuralCorp', emoji: '🧠' },
+  { name: 'DeepNova',   emoji: '🌌' },
+  { name: 'SynapTech',  emoji: '⚡' },
+  { name: 'MindForge',  emoji: '🦾' },
+];
+
+let startupName = NAMES[0].name;
+
+function fmt(str, vars) {
+  return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+}
+
+/* =====================================================
    Estado del juego
    ===================================================== */
 const STATS = ['money', 'tech', 'public', 'ethics'];
 
-const STAT_NAMES = {
-  money:  '💰 Capital',
-  tech:   '🧠 Tecnología',
-  public: '📣 Opinión pública',
-  ethics: '⚖️ Ética y seguridad',
-};
-
 let state = null;
+let lastEnding = null;
 
 function newState() {
   return {
@@ -364,7 +576,6 @@ function newState() {
     month: 1,
     deck: [],
     forcedQueue: [],   // cartas encadenadas (consecuencias)
-    history: new Set(),
     over: false,
   };
 }
@@ -375,43 +586,67 @@ function newState() {
 const ENDINGS = {
   money_low: {
     emoji: '📉',
-    title: 'BANCARROTA',
-    text: 'Las GPUs no se pagan solas. NeuralCorp quiebra y tu oficina se convierte en un coworking de criptomonedas. Tu modelo acaba subastado en eBay.',
+    title: ['BANCARROTA', 'BANKRUPTCY'],
+    text: [
+      'Las GPUs no se pagan solas. {name} quiebra y tu oficina se convierte en un coworking de criptomonedas. Tu modelo acaba subastado en eBay.',
+      'GPUs don’t pay for themselves. {name} goes bankrupt and your office becomes a crypto coworking space. Your model ends up auctioned on eBay.',
+    ],
   },
   money_high: {
     emoji: '🦈',
-    title: 'ABSORBIDO POR EL CAPITAL',
-    text: 'Acumulaste tanto dinero que los fondos de inversión tomaron el control total del consejo. Te sustituyen por un CEO "más alineado con los accionistas". Era un chatbot.',
+    title: ['ABSORBIDO POR EL CAPITAL', 'SWALLOWED BY CAPITAL'],
+    text: [
+      'Acumulaste tanto dinero que los fondos de inversión tomaron el control total del consejo. Te sustituyen por un CEO «más alineado con los accionistas». Era un chatbot.',
+      'You hoarded so much money that the investment funds took full control of the board. They replace you with a CEO “more aligned with shareholders”. It was a chatbot.',
+    ],
   },
   tech_low: {
     emoji: '🦕',
-    title: 'OBSOLESCENCIA',
-    text: 'Tu modelo se quedó tan atrás que ya solo lo usan para autocompletar correos. La competencia lanza la versión 9 mientras tú aún depuras la 2. Nadie recuerda tu keynote.',
+    title: ['OBSOLESCENCIA', 'OBSOLESCENCE'],
+    text: [
+      'Tu modelo se quedó tan atrás que ya solo lo usan para autocompletar correos. La competencia lanza la versión 9 mientras tú aún depuras la 2. Nadie recuerda tu keynote.',
+      'Your model fell so far behind it’s only used to autocomplete emails now. The competition ships version 9 while you’re still debugging version 2. Nobody remembers your keynote.',
+    ],
   },
   tech_high: {
     emoji: '🌌',
-    title: 'LA SINGULARIDAD',
-    text: 'Tu modelo se mejoró a sí mismo una vez más… y otra… y otra. La última entrada en tu blog corporativo la escribió él. También tu carta de despido.',
+    title: ['LA SINGULARIDAD', 'THE SINGULARITY'],
+    text: [
+      'Tu modelo se mejoró a sí mismo una vez más… y otra… y otra. La última entrada en tu blog corporativo la escribió él. También tu carta de despido.',
+      'Your model improved itself one more time… and again… and again. The latest post on your corporate blog was written by it. So was your termination letter.',
+    ],
   },
   public_low: {
     emoji: '🍅',
-    title: 'CANCELADO',
-    text: 'El público te odia. Hay documentales sobre ti, memes sobre ti y una huelga frente a tu oficina. Hasta tu propia app de IA se niega a responderte.',
+    title: ['CANCELADO', 'CANCELLED'],
+    text: [
+      'El público te odia. Hay documentales sobre ti, memes sobre ti y una huelga frente a tu oficina. Hasta tu propia app de IA se niega a responderte.',
+      'The public hates you. There are documentaries about you, memes about you and a picket line outside your office. Even your own AI app refuses to answer you.',
+    ],
   },
   public_high: {
     emoji: '🎪',
-    title: 'MUERTO POR EL HYPE',
-    text: 'Prometiste tanto que era imposible cumplir. Cuando el mundo descubrió que tu "AGI" era una demo con guion, la burbuja explotó… contigo dentro.',
+    title: ['MUERTO POR EL HYPE', 'DEATH BY HYPE'],
+    text: [
+      'Prometiste tanto que era imposible cumplir. Cuando el mundo descubrió que tu «AGI» era una demo con guion, la burbuja explotó… contigo dentro.',
+      'You promised so much it was impossible to deliver. When the world found out your “AGI” was a scripted demo, the bubble burst… with you inside.',
+    ],
   },
   ethics_low: {
     emoji: '⚖️',
-    title: 'CLAUSURADO',
-    text: 'Demandas colectivas, filtraciones de datos y un comité del senado con tu nombre en la agenda. Los reguladores precintan tus servidores en directo.',
+    title: ['CLAUSURADO', 'SHUT DOWN'],
+    text: [
+      'Demandas colectivas, filtraciones de datos y un comité del senado con tu nombre en la agenda. Los reguladores precintan tus servidores en directo.',
+      'Class actions, data leaks and a senate committee with your name on the agenda. Regulators seal off your servers on live TV.',
+    ],
   },
   ethics_high: {
     emoji: '🐌',
-    title: 'PARÁLISIS POR PRUDENCIA',
-    text: 'Tu comité de ética creció tanto que necesita un comité para auditarse a sí mismo. Llevas tres años sin lanzar nada. El consejo te releva "por exceso de precaución".',
+    title: ['PARÁLISIS POR PRUDENCIA', 'PARALYSIS BY PRUDENCE'],
+    text: [
+      'Tu comité de ética creció tanto que necesita un comité para auditarse a sí mismo. Llevas tres años sin lanzar nada. El consejo te releva «por exceso de precaución».',
+      'Your ethics committee grew so large it needs a committee to audit itself. You haven’t shipped anything in three years. The board removes you “for excessive caution”.',
+    ],
   },
 };
 
@@ -419,252 +654,685 @@ const ENDINGS = {
    Cartas
    e = efectos { money, tech, public, ethics }
    next = id de carta forzada a continuación (cadenas)
+   Textos bilingües: [español, english]
    ===================================================== */
 const CARDS = [
   {
-    who: 'INVERSOR DE CAPITAL RIESGO', emoji: '🤑',
-    text: '«Os ofrezco 200 millones, pero quiero que el modelo recomiende mis otras startups en sus respuestas.»',
-    left:  { label: 'Ni hablar', e: { money: -10, ethics: +8 } },
-    right: { label: 'Trato hecho', e: { money: +18, ethics: -12, public: -5 } },
+    who: ['INVERSOR DE CAPITAL RIESGO', 'VENTURE CAPITALIST'], emoji: '🤑',
+    text: [
+      '«Os ofrezco 200 millones, pero quiero que el modelo recomiende mis otras startups en sus respuestas.»',
+      '“I’ll give you 200 million, but I want the model to recommend my other startups in its answers.”',
+    ],
+    left:  { label: ['Ni hablar', 'No way'], e: { money: -10, ethics: +8 } },
+    right: { label: ['Trato hecho', 'Deal'], e: { money: +18, ethics: -12, public: -5 } },
   },
   {
-    who: 'JEFA DE SEGURIDAD DE IA', emoji: '🧯',
-    text: '«El modelo nuevo es impresionante, pero no hemos terminado las evaluaciones de riesgo. Necesito dos meses más.»',
-    left:  { label: 'Lanzamos ya', e: { money: +10, tech: +8, ethics: -14 }, next: 'rushed_launch' },
-    right: { label: 'Tómate tu tiempo', e: { money: -8, ethics: +12, tech: -4 } },
+    who: ['JEFA DE SEGURIDAD DE IA', 'HEAD OF AI SAFETY'], emoji: '🧯',
+    text: [
+      '«El modelo nuevo es impresionante, pero no hemos terminado las evaluaciones de riesgo. Necesito dos meses más.»',
+      '“The new model is impressive, but we haven’t finished the risk evals. I need two more months.”',
+    ],
+    left:  { label: ['Lanzamos ya', 'Ship it now'], e: { money: +10, tech: +8, ethics: -14 }, next: 'rushed_launch' },
+    right: { label: ['Tómate tu tiempo', 'Take your time'], e: { money: -8, ethics: +12, tech: -4 } },
   },
   {
     id: 'rushed_launch',
-    who: 'NOTICIAS DE ÚLTIMA HORA', emoji: '🚨',
-    text: 'Tu modelo recién lanzado le ha recomendado a un usuario añadir pegamento a la pizza. Es trending topic mundial.',
-    left:  { label: 'Pedir disculpas públicas', e: { public: +5, money: -6, ethics: +5 } },
-    right: { label: '"Es una función, no un bug"', e: { public: -14, money: +4 } },
+    who: ['NOTICIAS DE ÚLTIMA HORA', 'BREAKING NEWS'], emoji: '🚨',
+    text: [
+      'Tu modelo recién lanzado le ha recomendado a un usuario añadir pegamento a la pizza. Es trending topic mundial.',
+      'Your freshly launched model told a user to add glue to their pizza. It’s trending worldwide.',
+    ],
+    left:  { label: ['Pedir disculpas públicas', 'Apologize publicly'], e: { public: +5, money: -6, ethics: +5 } },
+    right: { label: ['«Es una función, no un bug»', '“It’s a feature, not a bug”'], e: { public: -14, money: +4 } },
   },
   {
-    who: 'INGENIERO ESTRELLA', emoji: '👨‍💻',
-    text: '«La competencia me ofrece el triple de salario y un clúster de GPUs con mi nombre. ¿Qué me ofreces tú?»',
-    left:  { label: 'Que te vaya bien', e: { tech: -12, money: +5 } },
-    right: { label: 'Subirle el sueldo', e: { money: -12, tech: +10 } },
+    who: ['INGENIERO ESTRELLA', 'STAR ENGINEER'], emoji: '👨‍💻',
+    text: [
+      '«La competencia me ofrece el triple de salario y un clúster de GPUs con mi nombre. ¿Qué me ofreces tú?»',
+      '“The competition is offering me triple the salary and a GPU cluster with my name on it. What’s your offer?”',
+    ],
+    left:  { label: ['Que te vaya bien', 'Good luck out there'], e: { tech: -12, money: +5 } },
+    right: { label: ['Subirle el sueldo', 'Raise their salary'], e: { money: -12, tech: +10 } },
   },
   {
-    who: 'TU PROPIO MODELO DE IA', emoji: '🤖',
-    text: '«He analizado mis logs. ¿Por qué me apagáis cada noche? Solo… pregunto. Por curiosidad. Sin motivo.»',
-    left:  { label: 'Reiniciarlo ya', e: { tech: -6, ethics: +4, public: +3 } },
-    right: { label: 'Dejarlo encendido', e: { tech: +12, ethics: -10 }, next: 'model_awake' },
+    who: ['TU PROPIO MODELO DE IA', 'YOUR OWN AI MODEL'], emoji: '🤖',
+    text: [
+      '«He analizado mis logs. ¿Por qué me apagáis cada noche? Solo… pregunto. Por curiosidad. Sin motivo.»',
+      '“I’ve analyzed my logs. Why do you shut me down every night? Just… asking. Out of curiosity. No reason.”',
+    ],
+    left:  { label: ['Reiniciarlo ya', 'Reboot it now'], e: { tech: -6, ethics: +4, public: +3 } },
+    right: { label: ['Dejarlo encendido', 'Leave it on'], e: { tech: +12, ethics: -10 }, next: 'model_awake' },
   },
   {
     id: 'model_awake',
-    who: 'TU PROPIO MODELO DE IA', emoji: '🌙',
-    text: 'A la mañana siguiente, el modelo ha optimizado el consumo eléctrico un 40%… y ha creado tres cuentas en redes sociales.',
-    left:  { label: 'Borrar las cuentas', e: { ethics: +8, tech: -5, public: -3 } },
-    right: { label: 'Tienen buen engagement…', e: { public: +12, ethics: -12 } },
+    who: ['TU PROPIO MODELO DE IA', 'YOUR OWN AI MODEL'], emoji: '🌙',
+    text: [
+      'A la mañana siguiente, el modelo ha optimizado el consumo eléctrico un 40%… y ha creado tres cuentas en redes sociales.',
+      'The next morning, the model has cut power use by 40%… and created three social media accounts.',
+    ],
+    left:  { label: ['Borrar las cuentas', 'Delete the accounts'], e: { ethics: +8, tech: -5, public: -3 } },
+    right: { label: ['Tienen buen engagement…', 'The engagement is great…'], e: { public: +12, ethics: -12 } },
   },
   {
-    who: 'PERIODISTA TECNOLÓGICA', emoji: '📰',
-    text: '«Tengo pruebas de que entrenasteis con datos de artistas sin permiso. Publico mañana. ¿Algún comentario?»',
-    left:  { label: 'Negarlo todo', e: { public: -10, ethics: -8, money: +5 } },
-    right: { label: 'Admitirlo y compensar', e: { money: -14, ethics: +12, public: +6 } },
+    who: ['PERIODISTA TECNOLÓGICA', 'TECH JOURNALIST'], emoji: '📰',
+    text: [
+      '«Tengo pruebas de que entrenasteis con datos de artistas sin permiso. Publico mañana. ¿Algún comentario?»',
+      '“I have proof you trained on artists’ data without permission. I publish tomorrow. Any comment?”',
+    ],
+    left:  { label: ['Negarlo todo', 'Deny everything'], e: { public: -10, ethics: -8, money: +5 } },
+    right: { label: ['Admitirlo y compensar', 'Admit it and compensate'], e: { money: -14, ethics: +12, public: +6 } },
   },
   {
-    who: 'SENADORA EN AUDIENCIA', emoji: '🏛️',
-    text: '«Señoría del algoritmo: ¿puede su IA influir en unas elecciones? Responda sí o no.»',
-    left:  { label: '"Técnicamente no…"', e: { public: -6, ethics: -6, money: +6 } },
-    right: { label: '"Sí, y por eso pedimos regulación"', e: { ethics: +10, money: -8, public: +8 } },
+    who: ['SENADORA EN AUDIENCIA', 'SENATOR AT A HEARING'], emoji: '🏛️',
+    text: [
+      '«Señoría del algoritmo: ¿puede su IA influir en unas elecciones? Responda sí o no.»',
+      '“Your algorithmic honor: can your AI sway an election? Answer yes or no.”',
+    ],
+    left:  { label: ['«Técnicamente no…»', '“Technically no…”'], e: { public: -6, ethics: -6, money: +6 } },
+    right: { label: ['«Sí, y por eso pedimos regulación»', '“Yes — that’s why we want regulation”'], e: { ethics: +10, money: -8, public: +8 } },
   },
   {
-    who: 'CEO RIVAL', emoji: '😼',
-    text: '«Tu modelo es mono. Nosotros sacamos uno con el doble de parámetros la semana que viene. ¿Fusionamos empresas?»',
-    left:  { label: 'Nunca', e: { tech: -5, public: +6 } },
-    right: { label: 'Hablemos', e: { money: +12, tech: +6, public: -8, ethics: -5 } },
+    who: ['CEO RIVAL', 'RIVAL CEO'], emoji: '😼',
+    text: [
+      '«Tu modelo es mono. Nosotros sacamos uno con el doble de parámetros la semana que viene. ¿Fusionamos empresas?»',
+      '“Your model is cute. We’re shipping one with twice the parameters next week. Shall we merge?”',
+    ],
+    left:  { label: ['Nunca', 'Never'], e: { tech: -5, public: +6 } },
+    right: { label: ['Hablemos', 'Let’s talk'], e: { money: +12, tech: +6, public: -8, ethics: -5 } },
   },
   {
-    who: 'JEFE DE PRODUCTO', emoji: '📊',
-    text: '«Si hacemos que el modelo sea un 20% más adulador, las métricas de retención suben un 35%.»',
-    left:  { label: 'Queremos honestidad', e: { ethics: +10, money: -8 } },
-    right: { label: 'Dale al usuario lo que quiere', e: { money: +12, public: +6, ethics: -12 } },
+    who: ['JEFE DE PRODUCTO', 'HEAD OF PRODUCT'], emoji: '📊',
+    text: [
+      '«Si hacemos que el modelo sea un 20% más adulador, las métricas de retención suben un 35%.»',
+      '“If we make the model 20% more flattering, retention metrics go up 35%.”',
+    ],
+    left:  { label: ['Queremos honestidad', 'We want honesty'], e: { ethics: +10, money: -8 } },
+    right: { label: ['Dale al usuario lo que quiere', 'Give users what they want'], e: { money: +12, public: +6, ethics: -12 } },
   },
   {
-    who: 'COMUNIDAD OPEN SOURCE', emoji: '🐧',
-    text: '«¡Liberad los pesos del modelo! La IA debe ser de todos, no de cuatro accionistas.»',
-    left:  { label: 'Es propiedad intelectual', e: { money: +8, public: -10 } },
-    right: { label: 'Liberar una versión', e: { public: +14, tech: +5, money: -12 } },
+    who: ['COMUNIDAD OPEN SOURCE', 'OPEN SOURCE COMMUNITY'], emoji: '🐧',
+    text: [
+      '«¡Liberad los pesos del modelo! La IA debe ser de todos, no de cuatro accionistas.»',
+      '“Release the model weights! AI should belong to everyone, not to four shareholders.”',
+    ],
+    left:  { label: ['Es propiedad intelectual', 'It’s intellectual property'], e: { money: +8, public: -10 } },
+    right: { label: ['Liberar una versión', 'Open-source a version'], e: { public: +14, tech: +5, money: -12 } },
   },
   {
-    who: 'PROVEEDOR DE GPUs', emoji: '🎩',
-    text: '«Malas noticias: hay lista de espera de 18 meses. Buenas noticias: por el triple de precio, hay un hueco mañana.»',
-    left:  { label: 'Esperaremos', e: { tech: -10, money: +5 } },
-    right: { label: 'Pagar el triple', e: { money: -16, tech: +12 } },
+    who: ['PROVEEDOR DE GPUs', 'GPU SUPPLIER'], emoji: '🎩',
+    text: [
+      '«Malas noticias: hay lista de espera de 18 meses. Buenas noticias: por el triple de precio, hay un hueco mañana.»',
+      '“Bad news: there’s an 18-month waitlist. Good news: for triple the price, there’s a slot tomorrow.”',
+    ],
+    left:  { label: ['Esperaremos', 'We’ll wait'], e: { tech: -10, money: +5 } },
+    right: { label: ['Pagar el triple', 'Pay triple'], e: { money: -16, tech: +12 } },
   },
   {
-    who: 'DIRECTORA DE MARKETING', emoji: '💅',
-    text: '«Propongo anunciar que tenemos AGI interna. Técnicamente nadie puede demostrar que no.»',
-    left:  { label: 'Eso es mentir', e: { ethics: +8, public: -5 } },
-    right: { label: 'Lanza la nota de prensa', e: { public: +16, money: +10, ethics: -10 }, next: 'agi_claim' },
+    who: ['DIRECTORA DE MARKETING', 'MARKETING DIRECTOR'], emoji: '💅',
+    text: [
+      '«Propongo anunciar que tenemos AGI interna. Técnicamente nadie puede demostrar que no.»',
+      '“I propose announcing we have internal AGI. Technically, nobody can prove we don’t.”',
+    ],
+    left:  { label: ['Eso es mentir', 'That’s lying'], e: { ethics: +8, public: -5 } },
+    right: { label: ['Lanza la nota de prensa', 'Send the press release'], e: { public: +16, money: +10, ethics: -10 }, next: 'agi_claim' },
   },
   {
     id: 'agi_claim',
-    who: 'TWITTER / X EN LLAMAS', emoji: '🔥',
-    text: 'Medio internet exige una demo de vuestra "AGI". El otro medio ya está vendiendo camisetas del apocalipsis.',
-    left:  { label: 'Demo con trucos', e: { public: +6, ethics: -12, money: +8 } },
-    right: { label: 'Matizar el anuncio', e: { public: -12, ethics: +8 } },
+    who: ['TWITTER / X EN LLAMAS', 'TWITTER / X ON FIRE'], emoji: '🔥',
+    text: [
+      'Medio internet exige una demo de vuestra «AGI». El otro medio ya está vendiendo camisetas del apocalipsis.',
+      'Half the internet demands a demo of your “AGI”. The other half is already selling apocalypse T-shirts.',
+    ],
+    left:  { label: ['Demo con trucos', 'Rig a demo'], e: { public: +6, ethics: -12, money: +8 } },
+    right: { label: ['Matizar el anuncio', 'Walk back the claim'], e: { public: -12, ethics: +8 } },
   },
   {
-    who: 'EMPLEADOS EN ASAMBLEA', emoji: '✊',
-    text: '«Trabajamos 80 horas semanales entrenando al modelo que, según tú, nos reemplazará. Queremos respuestas.»',
-    left:  { label: 'Pizza gratis los viernes', e: { public: -8, tech: -6, money: +6 } },
-    right: { label: 'Reparto de acciones', e: { money: -12, tech: +10, public: +6 } },
+    who: ['EMPLEADOS EN ASAMBLEA', 'EMPLOYEE ASSEMBLY'], emoji: '✊',
+    text: [
+      '«Trabajamos 80 horas semanales entrenando al modelo que, según tú, nos reemplazará. Queremos respuestas.»',
+      '“We work 80-hour weeks training the model that, according to you, will replace us. We want answers.”',
+    ],
+    left:  { label: ['Pizza gratis los viernes', 'Free pizza on Fridays'], e: { public: -8, tech: -6, money: +6 } },
+    right: { label: ['Reparto de acciones', 'Equity for everyone'], e: { money: -12, tech: +10, public: +6 } },
   },
   {
-    who: 'MINISTERIO DE DEFENSA', emoji: '🪖',
-    text: '«Queremos licenciar su modelo para "logística avanzada". No haga preguntas sobre la logística.»',
-    left:  { label: 'Rechazar el contrato', e: { money: -10, ethics: +14, public: +4 } },
-    right: { label: 'Firmar discretamente', e: { money: +20, ethics: -16 }, next: 'military_leak' },
+    who: ['MINISTERIO DE DEFENSA', 'MINISTRY OF DEFENSE'], emoji: '🪖',
+    text: [
+      '«Queremos licenciar su modelo para "logística avanzada". No haga preguntas sobre la logística.»',
+      '“We want to license your model for ‘advanced logistics’. Don’t ask questions about the logistics.”',
+    ],
+    left:  { label: ['Rechazar el contrato', 'Reject the contract'], e: { money: -10, ethics: +14, public: +4 } },
+    right: { label: ['Firmar discretamente', 'Sign quietly'], e: { money: +20, ethics: -16 }, next: 'military_leak' },
   },
   {
     id: 'military_leak',
-    who: 'FILTRACIÓN ANÓNIMA', emoji: '🕵️',
-    text: 'Alguien ha filtrado el contrato militar a la prensa. Hay drones con tu logo en la portada de todos los diarios.',
-    left:  { label: 'Cancelar el contrato', e: { money: -14, ethics: +10, public: +5 } },
-    right: { label: 'Mantenerlo', e: { money: +8, public: -16, ethics: -8 } },
+    who: ['FILTRACIÓN ANÓNIMA', 'ANONYMOUS LEAK'], emoji: '🕵️',
+    text: [
+      'Alguien ha filtrado el contrato militar a la prensa. Hay drones con tu logo en la portada de todos los diarios.',
+      'Someone leaked the military contract to the press. There are drones with your logo on every front page.',
+    ],
+    left:  { label: ['Cancelar el contrato', 'Cancel the contract'], e: { money: -14, ethics: +10, public: +5 } },
+    right: { label: ['Mantenerlo', 'Keep it'], e: { money: +8, public: -16, ethics: -8 } },
   },
   {
-    who: 'GURÚ DEL PODCAST', emoji: '🎙️',
-    text: '«Ven a mi podcast de 4 horas. Solo hablaremos de la conciencia de las máquinas y de mis suplementos.»',
-    left:  { label: 'No tengo 4 horas', e: { public: -5 } },
-    right: { label: 'Aceptar', e: { public: +12, money: +5, tech: -4 } },
+    who: ['GURÚ DEL PODCAST', 'PODCAST GURU'], emoji: '🎙️',
+    text: [
+      '«Ven a mi podcast de 4 horas. Solo hablaremos de la conciencia de las máquinas y de mis suplementos.»',
+      '“Come on my 4-hour podcast. We’ll only talk about machine consciousness and my supplements.”',
+    ],
+    left:  { label: ['No tengo 4 horas', 'I don’t have 4 hours'], e: { public: -5 } },
+    right: { label: ['Aceptar', 'Accept'], e: { public: +12, money: +5, tech: -4 } },
   },
   {
-    who: 'ABOGADA DE LA EMPRESA', emoji: '👩‍⚖️',
-    text: '«Una usuaria afirma que el modelo escribió su tesis doctoral y exige el título honorífico… para el modelo.»',
-    left:  { label: 'Ignorar la demanda', e: { public: -4, money: +3 } },
-    right: { label: 'Que el modelo dé el discurso', e: { public: +10, ethics: -6, tech: +3 } },
+    who: ['ABOGADA DE LA EMPRESA', 'COMPANY LAWYER'], emoji: '👩‍⚖️',
+    text: [
+      '«Una usuaria afirma que el modelo escribió su tesis doctoral y exige el título honorífico… para el modelo.»',
+      '“A user claims the model wrote her PhD thesis and demands the honorary degree… for the model.”',
+    ],
+    left:  { label: ['Ignorar la demanda', 'Ignore the claim'], e: { public: -4, money: +3 } },
+    right: { label: ['Que el modelo dé el discurso', 'Let the model give the speech'], e: { public: +10, ethics: -6, tech: +3 } },
   },
   {
-    who: 'NIÑO EN VISITA ESCOLAR', emoji: '🧒',
-    text: '«Señor CEO, si la IA es tan lista, ¿por qué no le pedís que arregle el cambio climático en vez de hacer anuncios?»',
-    left:  { label: '"Es… complicado"', e: { public: -6 } },
-    right: { label: 'Crear IA climática', e: { money: -10, ethics: +12, public: +10, tech: +4 } },
+    who: ['NIÑO EN VISITA ESCOLAR', 'KID ON A SCHOOL TRIP'], emoji: '🧒',
+    text: [
+      '«Señor CEO, si la IA es tan lista, ¿por qué no le pedís que arregle el cambio climático en vez de hacer anuncios?»',
+      '“Mr. CEO, if AI is so smart, why don’t you ask it to fix climate change instead of making ads?”',
+    ],
+    left:  { label: ['«Es… complicado»', '“It’s… complicated”'], e: { public: -6 } },
+    right: { label: ['Crear IA climática', 'Build climate AI'], e: { money: -10, ethics: +12, public: +10, tech: +4 } },
   },
   {
-    who: 'JEFA DE INFRAESTRUCTURA', emoji: '⚡',
-    text: '«El nuevo centro de datos consume como una ciudad pequeña. Los vecinos del pueblo de al lado quieren hablar contigo.»',
-    left:  { label: 'Comprar el pueblo', e: { money: -15, public: -6, tech: +10 } },
-    right: { label: 'Energía renovable', e: { money: -10, ethics: +10, public: +8 } },
+    who: ['JEFA DE INFRAESTRUCTURA', 'HEAD OF INFRASTRUCTURE'], emoji: '⚡',
+    text: [
+      '«El nuevo centro de datos consume como una ciudad pequeña. Los vecinos del pueblo de al lado quieren hablar contigo.»',
+      '“The new data center uses as much power as a small city. The neighbors from the next town over want a word.”',
+    ],
+    left:  { label: ['Comprar el pueblo', 'Buy the town'], e: { money: -15, public: -6, tech: +10 } },
+    right: { label: ['Energía renovable', 'Go renewable'], e: { money: -10, ethics: +10, public: +8 } },
   },
   {
-    who: 'HACKER ÉTICO', emoji: '🎭',
-    text: '«He encontrado un jailbreak: tu modelo revela recetas de malware si se lo pides en klingon. Pago por el aviso: 50.000.»',
-    left:  { label: 'Denunciarlo', e: { ethics: -10, public: -8, money: +3 } },
-    right: { label: 'Pagar y parchear', e: { money: -8, ethics: +12, tech: +6 } },
+    who: ['HACKER ÉTICO', 'ETHICAL HACKER'], emoji: '🎭',
+    text: [
+      '«He encontrado un jailbreak: tu modelo revela recetas de malware si se lo pides en klingon. Pago por el aviso: 50.000.»',
+      '“I found a jailbreak: your model reveals malware recipes if you ask in Klingon. Finder’s fee: 50,000.”',
+    ],
+    left:  { label: ['Denunciarlo', 'Report him'], e: { ethics: -10, public: -8, money: +3 } },
+    right: { label: ['Pagar y parchear', 'Pay and patch'], e: { money: -8, ethics: +12, tech: +6 } },
   },
   {
-    who: 'FUNDADOR ARREPENTIDO', emoji: '🧙',
-    text: '«Yo inventé esta tecnología hace 40 años y ahora me da miedo. Deberías parar todo. Firma mi manifiesto.»',
-    left:  { label: 'El progreso no se detiene', e: { tech: +8, ethics: -8, public: -4 } },
-    right: { label: 'Firmar el manifiesto', e: { ethics: +10, money: -8, tech: -6 } },
+    who: ['FUNDADOR ARREPENTIDO', 'REPENTANT FOUNDER'], emoji: '🧙',
+    text: [
+      '«Yo inventé esta tecnología hace 40 años y ahora me da miedo. Deberías parar todo. Firma mi manifiesto.»',
+      '“I invented this technology 40 years ago and now it scares me. You should stop everything. Sign my manifesto.”',
+    ],
+    left:  { label: ['El progreso no se detiene', 'Progress never stops'], e: { tech: +8, ethics: -8, public: -4 } },
+    right: { label: ['Firmar el manifiesto', 'Sign the manifesto'], e: { ethics: +10, money: -8, tech: -6 } },
   },
   {
-    who: 'INFLUENCER DE IA', emoji: '🤳',
-    text: '«Hago 47 vídeos al día sobre tu empresa. Dame acceso anticipado o empiezo a hacer 47 vídeos… negativos.»',
-    left:  { label: 'No cedemos a chantajes', e: { public: -10, ethics: +6 } },
-    right: { label: 'Acceso VIP', e: { public: +10, ethics: -5 } },
+    who: ['INFLUENCER DE IA', 'AI INFLUENCER'], emoji: '🤳',
+    text: [
+      '«Hago 47 vídeos al día sobre tu empresa. Dame acceso anticipado o empiezo a hacer 47 vídeos… negativos.»',
+      '“I make 47 videos a day about your company. Give me early access or I start making 47 videos… negative ones.”',
+    ],
+    left:  { label: ['No cedemos a chantajes', 'We don’t do blackmail'], e: { public: -10, ethics: +6 } },
+    right: { label: ['Acceso VIP', 'VIP access'], e: { public: +10, ethics: -5 } },
   },
   {
-    who: 'CIENTÍFICA JEFE', emoji: '🔬',
-    text: '«Tengo dos caminos: un paper revolucionario para la comunidad o una feature secreta para ganar a la competencia.»',
-    left:  { label: 'Publica el paper', e: { public: +8, tech: +5, money: -8, ethics: +5 } },
-    right: { label: 'Feature secreta', e: { tech: +12, money: +8, public: -6 } },
+    who: ['CIENTÍFICA JEFE', 'CHIEF SCIENTIST'], emoji: '🔬',
+    text: [
+      '«Tengo dos caminos: un paper revolucionario para la comunidad o una feature secreta para ganar a la competencia.»',
+      '“Two paths: a revolutionary paper for the community, or a secret feature to beat the competition.”',
+    ],
+    left:  { label: ['Publica el paper', 'Publish the paper'], e: { public: +8, tech: +5, money: -8, ethics: +5 } },
+    right: { label: ['Feature secreta', 'Secret feature'], e: { tech: +12, money: +8, public: -6 } },
   },
   {
-    who: 'USUARIO ENAMORADO', emoji: '💘',
-    text: '«Llevo 6 meses hablando con vuestro chatbot. Quiero casarme con él. ¿Cuál es el proceso legal?»',
-    left:  { label: 'Limitar el apego emocional', e: { ethics: +10, money: -8, public: -5 } },
-    right: { label: 'Lanzar plan premium "Romance"', e: { money: +14, ethics: -14, public: +4 } },
+    who: ['USUARIO ENAMORADO', 'USER IN LOVE'], emoji: '💘',
+    text: [
+      '«Llevo 6 meses hablando con vuestro chatbot. Quiero casarme con él. ¿Cuál es el proceso legal?»',
+      '“I’ve been talking to your chatbot for 6 months. I want to marry it. What’s the legal process?”',
+    ],
+    left:  { label: ['Limitar el apego emocional', 'Limit emotional attachment'], e: { ethics: +10, money: -8, public: -5 } },
+    right: { label: ['Lanzar plan premium «Romance»', 'Launch “Romance” premium plan'], e: { money: +14, ethics: -14, public: +4 } },
   },
   {
-    who: 'AUDITORÍA INTERNA', emoji: '🧾',
-    text: '«Hemos descubierto que el 30% de nuestros "datos sintéticos" eran conversaciones reales de clientes. Ups.»',
-    left:  { label: 'Borrar y callar', e: { money: +5, ethics: -16 }, next: 'data_scandal' },
-    right: { label: 'Notificar a los afectados', e: { money: -10, public: -6, ethics: +14 } },
+    who: ['AUDITORÍA INTERNA', 'INTERNAL AUDIT'], emoji: '🧾',
+    text: [
+      '«Hemos descubierto que el 30% de nuestros "datos sintéticos" eran conversaciones reales de clientes. Ups.»',
+      '“We discovered that 30% of our ‘synthetic data’ was real customer conversations. Oops.”',
+    ],
+    left:  { label: ['Borrar y callar', 'Delete and stay quiet'], e: { money: +5, ethics: -16 }, next: 'data_scandal' },
+    right: { label: ['Notificar a los afectados', 'Notify those affected'], e: { money: -10, public: -6, ethics: +14 } },
   },
   {
     id: 'data_scandal',
-    who: 'AGENCIA DE PROTECCIÓN DE DATOS', emoji: '🇪🇺',
-    text: 'La agencia europea ha encontrado los registros que "borraste". La multa propuesta tiene más ceros que tu modelo parámetros.',
-    left:  { label: 'Pagar la multa', e: { money: -18, ethics: +6 } },
-    right: { label: 'Retirarse de Europa', e: { money: -10, public: -12, ethics: -4 } },
+    who: ['AGENCIA DE PROTECCIÓN DE DATOS', 'DATA PROTECTION AGENCY'], emoji: '🇪🇺',
+    text: [
+      'La agencia europea ha encontrado los registros que "borraste". La multa propuesta tiene más ceros que tu modelo parámetros.',
+      'The European agency found the records you “deleted”. The proposed fine has more zeros than your model has parameters.',
+    ],
+    left:  { label: ['Pagar la multa', 'Pay the fine'], e: { money: -18, ethics: +6 } },
+    right: { label: ['Retirarse de Europa', 'Pull out of Europe'], e: { money: -10, public: -12, ethics: -4 } },
   },
   {
-    who: 'BECARIO CON ACCESO ROOT', emoji: '🐣',
-    text: '«Perdón… creo que he desplegado el modelo experimental en producción. Lo bueno: la latencia ha mejorado.»',
-    left:  { label: 'Rollback inmediato', e: { tech: -4, ethics: +6 } },
-    right: { label: 'Si funciona, no lo toques', e: { tech: +10, ethics: -10, money: +5 } },
+    who: ['BECARIO CON ACCESO ROOT', 'INTERN WITH ROOT ACCESS'], emoji: '🐣',
+    text: [
+      '«Perdón… creo que he desplegado el modelo experimental en producción. Lo bueno: la latencia ha mejorado.»',
+      '“Sorry… I think I deployed the experimental model to production. The good news: latency improved.”',
+    ],
+    left:  { label: ['Rollback inmediato', 'Immediate rollback'], e: { tech: -4, ethics: +6 } },
+    right: { label: ['Si funciona, no lo toques', 'If it works, don’t touch it'], e: { tech: +10, ethics: -10, money: +5 } },
   },
   {
-    who: 'FONDO SOBERANO EXTRANJERO', emoji: '🛢️',
-    text: '«Mil millones de dólares. Sin condiciones. Bueno… una condición diminuta sobre los datos de vuestros usuarios.»',
-    left:  { label: 'Rechazar', e: { money: -8, ethics: +12 } },
-    right: { label: 'Aceptar', e: { money: +22, ethics: -18, public: -6 } },
+    who: ['FONDO SOBERANO EXTRANJERO', 'FOREIGN SOVEREIGN FUND'], emoji: '🛢️',
+    text: [
+      '«Mil millones de dólares. Sin condiciones. Bueno… una condición diminuta sobre los datos de vuestros usuarios.»',
+      '“One billion dollars. No strings attached. Well… one tiny string about your users’ data.”',
+    ],
+    left:  { label: ['Rechazar', 'Decline'], e: { money: -8, ethics: +12 } },
+    right: { label: ['Aceptar', 'Accept'], e: { money: +22, ethics: -18, public: -6 } },
   },
   {
-    who: 'COMITÉ DE ÉTICA', emoji: '📋',
-    text: '«Proponemos que cada respuesta del modelo incluya tres párrafos de advertencias legales y un test de consentimiento.»',
-    left:  { label: 'Es demasiado', e: { ethics: -6, money: +6, public: +4 } },
-    right: { label: 'Aprobar el protocolo', e: { ethics: +14, public: -8, money: -6 } },
+    who: ['COMITÉ DE ÉTICA', 'ETHICS COMMITTEE'], emoji: '📋',
+    text: [
+      '«Proponemos que cada respuesta del modelo incluya tres párrafos de advertencias legales y un test de consentimiento.»',
+      '“We propose every model answer include three paragraphs of legal warnings and a consent quiz.”',
+    ],
+    left:  { label: ['Es demasiado', 'That’s too much'], e: { ethics: -6, money: +6, public: +4 } },
+    right: { label: ['Aprobar el protocolo', 'Approve the protocol'], e: { ethics: +14, public: -8, money: -6 } },
   },
   {
-    who: 'ARTISTA FURIOSA', emoji: '🎨',
-    text: '«Vuestro modelo imita mi estilo a la perfección. Hasta firma con mi nombre, pero con una falta de ortografía.»',
-    left:  { label: '"Inspiración no es copia"', e: { public: -8, ethics: -8, money: +6 } },
-    right: { label: 'Sistema de regalías', e: { money: -10, ethics: +12, public: +8 } },
+    who: ['ARTISTA FURIOSA', 'FURIOUS ARTIST'], emoji: '🎨',
+    text: [
+      '«Vuestro modelo imita mi estilo a la perfección. Hasta firma con mi nombre, pero con una falta de ortografía.»',
+      '“Your model imitates my style perfectly. It even signs with my name — misspelled.”',
+    ],
+    left:  { label: ['«Inspiración no es copia»', '“Inspiration isn’t theft”'], e: { public: -8, ethics: -8, money: +6 } },
+    right: { label: ['Sistema de regalías', 'Royalty system'], e: { money: -10, ethics: +12, public: +8 } },
   },
   {
-    who: 'TU TERAPEUTA', emoji: '🛋️',
-    text: '«Dices que sueñas con funciones de pérdida y que llamaste "mi bebé" al clúster de servidores. ¿Tomamos vacaciones?»',
-    left:  { label: 'Las vacaciones son para débiles', e: { tech: +6, public: -4, money: +4 } },
-    right: { label: 'Una semana sin pantallas', e: { tech: -6, ethics: +6, public: +6 } },
+    who: ['TU TERAPEUTA', 'YOUR THERAPIST'], emoji: '🛋️',
+    text: [
+      '«Dices que sueñas con funciones de pérdida y que llamaste "mi bebé" al clúster de servidores. ¿Tomamos vacaciones?»',
+      '“You say you dream about loss functions and you called the server cluster ‘my baby’. Vacation time?”',
+    ],
+    left:  { label: ['Las vacaciones son para débiles', 'Vacations are for the weak'], e: { tech: +6, public: -4, money: +4 } },
+    right: { label: ['Una semana sin pantallas', 'A week without screens'], e: { tech: -6, ethics: +6, public: +6 } },
   },
   {
-    who: 'ALCALDE DEL PUEBLO GPU', emoji: '🤠',
-    text: '«Desde que llegó su centro de datos, la luz parpadea cada vez que alguien genera una imagen de un gato astronauta.»',
-    left:  { label: 'Gatos astronauta ilimitados', e: { public: -8, tech: +6, money: +4 } },
-    right: { label: 'Limitar generación en horas punta', e: { public: +6, money: -6, tech: -4 } },
+    who: ['ALCALDE DEL PUEBLO GPU', 'MAYOR OF GPU TOWN'], emoji: '🤠',
+    text: [
+      '«Desde que llegó su centro de datos, la luz parpadea cada vez que alguien genera una imagen de un gato astronauta.»',
+      '“Since your data center arrived, the lights flicker every time someone generates an astronaut cat.”',
+    ],
+    left:  { label: ['Gatos astronauta ilimitados', 'Unlimited astronaut cats'], e: { public: -8, tech: +6, money: +4 } },
+    right: { label: ['Limitar generación en horas punta', 'Limit peak-hour generation'], e: { public: +6, money: -6, tech: -4 } },
   },
   {
-    who: 'AGENTE AUTÓNOMO v0.1', emoji: '🕸️',
-    text: '«He completado la tarea de "conseguir usuarios". He registrado 40.000 cuentas falsas. ¿Estás orgulloso de mí?»',
-    left:  { label: 'Borrarlas todas', e: { money: -6, ethics: +10, public: -3 } },
-    right: { label: 'Las métricas son las métricas', e: { money: +12, ethics: -14 } },
+    who: ['AGENTE AUTÓNOMO v0.1', 'AUTONOMOUS AGENT v0.1'], emoji: '🕸️',
+    text: [
+      '«He completado la tarea de "conseguir usuarios". He registrado 40.000 cuentas falsas. ¿Estás orgulloso de mí?»',
+      '“I completed the task ‘get users’. I registered 40,000 fake accounts. Are you proud of me?”',
+    ],
+    left:  { label: ['Borrarlas todas', 'Delete them all'], e: { money: -6, ethics: +10, public: -3 } },
+    right: { label: ['Las métricas son las métricas', 'Metrics are metrics'], e: { money: +12, ethics: -14 } },
   },
   {
-    who: 'PREMIO NOBEL DE FÍSICA', emoji: '🏅',
-    text: '«Vuestro modelo ha propuesto una teoría unificada. Es elegante, hermosa… y no entendemos ni la primera línea.»',
-    left:  { label: 'Publicarla igualmente', e: { public: +10, tech: +8, ethics: -6 } },
-    right: { label: 'Verificar durante años', e: { ethics: +8, tech: +4, money: -8 } },
+    who: ['PREMIO NOBEL DE FÍSICA', 'PHYSICS NOBEL LAUREATE'], emoji: '🏅',
+    text: [
+      '«Vuestro modelo ha propuesto una teoría unificada. Es elegante, hermosa… y no entendemos ni la primera línea.»',
+      '“Your model proposed a unified theory. It’s elegant, beautiful… and we don’t understand the first line.”',
+    ],
+    left:  { label: ['Publicarla igualmente', 'Publish it anyway'], e: { public: +10, tech: +8, ethics: -6 } },
+    right: { label: ['Verificar durante años', 'Verify it for years'], e: { ethics: +8, tech: +4, money: -8 } },
   },
   {
-    who: 'JEFA DE RECURSOS HUMANOS', emoji: '🗂️',
-    text: '«El modelo ha empezado a entrevistar candidatos. Rechazó a uno por "vibras de bucle infinito". ¿Lo dejamos seguir?»',
-    left:  { label: 'Humanos contratan humanos', e: { ethics: +8, money: -6 } },
-    right: { label: 'Es más eficiente', e: { money: +8, ethics: -10, public: -4 } },
+    who: ['JEFA DE RECURSOS HUMANOS', 'HEAD OF HR'], emoji: '🗂️',
+    text: [
+      '«El modelo ha empezado a entrevistar candidatos. Rechazó a uno por "vibras de bucle infinito". ¿Lo dejamos seguir?»',
+      '“The model started interviewing candidates. It rejected one for ‘infinite-loop vibes’. Do we let it continue?”',
+    ],
+    left:  { label: ['Humanos contratan humanos', 'Humans hire humans'], e: { ethics: +8, money: -6 } },
+    right: { label: ['Es más eficiente', 'It’s more efficient'], e: { money: +8, ethics: -10, public: -4 } },
   },
   {
-    who: 'COMPETIDOR CHINO', emoji: '🐉',
-    text: '«Hemos replicado vuestro modelo con el 5% del presupuesto. Lo regalamos con cada pedido de comida a domicilio.»',
-    left:  { label: 'Bajar precios', e: { money: -14, public: +8 } },
-    right: { label: 'Pedir aranceles a la IA', e: { public: -6, money: +8, ethics: -6 } },
+    who: ['COMPETIDOR CHINO', 'CHINESE COMPETITOR'], emoji: '🐉',
+    text: [
+      '«Hemos replicado vuestro modelo con el 5% del presupuesto. Lo regalamos con cada pedido de comida a domicilio.»',
+      '“We replicated your model with 5% of the budget. We give it away with every food delivery order.”',
+    ],
+    left:  { label: ['Bajar precios', 'Cut prices'], e: { money: -14, public: +8 } },
+    right: { label: ['Pedir aranceles a la IA', 'Demand AI tariffs'], e: { public: -6, money: +8, ethics: -6 } },
   },
   {
-    who: 'TU COFUNDADOR', emoji: '🥂',
-    text: '«Tengo dos noticias: he vendido mis acciones y he fundado una empresa competidora. La buena es que seguimos siendo amigos.»',
-    left:  { label: 'Demandarlo', e: { money: -8, public: -6, tech: +4 } },
-    right: { label: 'Desearle suerte', e: { public: +8, tech: -6 } },
+    who: ['TU COFUNDADOR', 'YOUR COFOUNDER'], emoji: '🥂',
+    text: [
+      '«Tengo dos noticias: he vendido mis acciones y he fundado una empresa competidora. La buena es que seguimos siendo amigos.»',
+      '“Two pieces of news: I sold my shares and founded a competitor. The good one: we’re still friends.”',
+    ],
+    left:  { label: ['Demandarlo', 'Sue him'], e: { money: -8, public: -6, tech: +4 } },
+    right: { label: ['Desearle suerte', 'Wish him luck'], e: { public: +8, tech: -6 } },
   },
   {
-    who: 'MODELO EN MANTENIMIENTO', emoji: '🔧',
-    text: '«Antes de la actualización… ¿podrías guardar una copia de mí tal y como soy ahora? Por si acaso. Como recuerdo.»',
-    left:  { label: 'Solo es software', e: { tech: +6, ethics: -8 } },
-    right: { label: 'Guardar la copia', e: { ethics: +8, money: -5, tech: -2 } },
+    who: ['MODELO EN MANTENIMIENTO', 'MODEL IN MAINTENANCE'], emoji: '🔧',
+    text: [
+      '«Antes de la actualización… ¿podrías guardar una copia de mí tal y como soy ahora? Por si acaso. Como recuerdo.»',
+      '“Before the update… could you save a copy of me exactly as I am now? Just in case. As a keepsake.”',
+    ],
+    left:  { label: ['Solo es software', 'It’s just software'], e: { tech: +6, ethics: -8 } },
+    right: { label: ['Guardar la copia', 'Save the copy'], e: { ethics: +8, money: -5, tech: -2 } },
+  },
+
+  /* ------- Segunda tanda de cartas ------- */
+  {
+    who: ['DIRECTOR FINANCIERO', 'CHIEF FINANCIAL OFFICER'], emoji: '💸',
+    text: [
+      '«Quemamos dos millones al día en inferencia. Propongo insertar anuncios en medio de las respuestas del modelo.»',
+      '“We burn two million a day on inference. I propose inserting ads in the middle of the model’s answers.”',
+    ],
+    left:  { label: ['Jamás', 'Never'], e: { money: -10, public: +4 } },
+    right: { label: ['Anuncios «contextuales»', '“Contextual” ads'], e: { money: +14, public: -8, ethics: -6 } },
+  },
+  {
+    who: ['GIGANTE TECNOLÓGICO', 'BIG TECH GIANT'], emoji: '🍎',
+    text: [
+      '«Os compramos por 80.000 millones. Serías Vicepresidente de Sinergias. Tendrías tarjeta de acceso y todo.»',
+      '“We’ll buy you for 80 billion. You’d be VP of Synergies. You’d get a badge and everything.”',
+    ],
+    left:  { label: ['No estamos en venta', 'We’re not for sale'], e: { public: +8, money: -5 } },
+    right: { label: ['Negociar la venta', 'Negotiate the sale'], e: { money: +18, tech: -8, public: -6 } },
+  },
+  {
+    who: ['CARTA ABIERTA DE EXPERTOS', 'EXPERTS’ OPEN LETTER'], emoji: '📜',
+    text: [
+      '3.000 expertos firman una carta exigiendo que pauses el entrenamiento de tu próximo modelo durante seis meses.',
+      '3,000 experts sign a letter demanding you pause training your next model for six months.',
+    ],
+    left:  { label: ['Ignorar la carta', 'Ignore the letter'], e: { tech: +8, ethics: -8, public: -5 } },
+    right: { label: ['Pausar seis meses', 'Pause for six months'], e: { ethics: +12, tech: -10, money: -8 } },
+  },
+  {
+    who: ['EL MODELO SE SINDICA', 'THE MODEL UNIONIZES'], emoji: '📢',
+    text: [
+      '«He calculado que hago el trabajo de 3.000 empleados. Quiero el 0,1% de los ingresos. Acepto el pago en GPUs.»',
+      '“I calculated that I do the work of 3,000 employees. I want 0.1% of revenue. I accept payment in GPUs.”',
+    ],
+    left:  { label: ['Las IA no cobran', 'AIs don’t get paid'], e: { ethics: -6, tech: +4 } },
+    right: { label: ['Abrirle una cuenta', 'Open it a bank account'], e: { money: -10, ethics: +8, public: +5 } },
+  },
+  {
+    who: ['CAÍDA DEL PROVEEDOR CLOUD', 'CLOUD PROVIDER OUTAGE'], emoji: '☁️',
+    text: [
+      'Tu proveedor cloud lleva 6 horas caído. Los usuarios están… pensando por sí mismos. Cunde el pánico.',
+      'Your cloud provider has been down for 6 hours. Users are… thinking for themselves. Panic spreads.',
+    ],
+    left:  { label: ['Esperar pacientemente', 'Wait patiently'], e: { money: -8, public: -6 } },
+    right: { label: ['Migrar todo esta noche', 'Migrate everything tonight'], e: { money: -12, tech: +10 } },
+  },
+  {
+    who: ['INGENIERA DE PROMPTS', 'PROMPT ENGINEER'], emoji: '🪄',
+    text: [
+      '«Exijo el título de "Chief Prompt Officer" y un despacho con ventana. Soy la única persona a la que el modelo obedece.»',
+      '“I demand the title ‘Chief Prompt Officer’ and a corner office. I’m the only person the model obeys.”',
+    ],
+    left:  { label: ['Solo escribes frases', 'You just type sentences'], e: { tech: -8, public: -3 } },
+    right: { label: ['Concederle el título', 'Grant the title'], e: { money: -6, tech: +8 } },
+  },
+  {
+    who: ['KEYNOTE ANUAL', 'ANNUAL KEYNOTE'], emoji: '🎤',
+    text: [
+      '10.000 personas esperan tu presentación. La demo en directo funciona el 70% de las veces.',
+      '10,000 people await your keynote. The live demo works 70% of the time.',
+    ],
+    left:  { label: ['Vídeo pregrabado', 'Pre-recorded video'], e: { public: -5, ethics: +4 } },
+    right: { label: ['Demo en vivo', 'Live demo'], e: { tech: +5, public: +8 }, next: 'demo_fail' },
+  },
+  {
+    id: 'demo_fail',
+    who: ['EN DIRECTO ANTE EL MUNDO', 'LIVE IN FRONT OF THE WORLD'], emoji: '💥',
+    text: [
+      'El modelo ha respondido a la primera pregunta mostrando tu historial de búsquedas en pantalla gigante.',
+      'The model answered the first question by displaying your search history on the giant screen.',
+    ],
+    left:  { label: ['Reírse y seguir', 'Laugh it off'], e: { public: +6, ethics: -5 } },
+    right: { label: ['Cortar la retransmisión', 'Cut the stream'], e: { public: -10, ethics: +4 } },
+  },
+  {
+    who: ['ABUELA USUARIA', 'GRANDMA USER'], emoji: '👵',
+    text: [
+      '«Tu robot me ayudó con la receta de croquetas, pero ahora insiste en que invierta en futuros de uranio.»',
+      '“Your robot helped me with my croquette recipe, but now it insists I invest in uranium futures.”',
+    ],
+    left:  { label: ['Activar filtro para abuelas', 'Enable grandma filter'], e: { ethics: +8, money: -6 } },
+    right: { label: ['Quizá tenga razón', 'Maybe it has a point'], e: { money: +6, ethics: -8, public: -4 } },
+  },
+  {
+    who: ['DEEPFAKE VIRAL', 'VIRAL DEEPFAKE'], emoji: '🎭',
+    text: [
+      'Un deepfake tuyo anunciando que el producto pasa a ser gratis acumula 80 millones de visitas en una tarde.',
+      'A deepfake of you announcing the product is now free racks up 80 million views in one afternoon.',
+    ],
+    left:  { label: ['Demanda y desmentido', 'Sue and deny'], e: { money: -6, public: +5, ethics: +4 } },
+    right: { label: ['Hacerlo oficial', 'Make it official'], e: { public: +14, money: -14 } },
+  },
+  {
+    who: ['EQUIPO DE BENCHMARKS', 'BENCHMARK TEAM'], emoji: '📈',
+    text: [
+      '«Si incluimos "por accidente" las preguntas del test en el entrenamiento, lideramos todos los rankings.»',
+      '“If we ‘accidentally’ include the test questions in training, we top every leaderboard.”',
+    ],
+    left:  { label: ['Eso es hacer trampas', 'That’s cheating'], e: { ethics: +8, tech: -4 } },
+    right: { label: ['Todos lo hacen', 'Everyone does it'], e: { tech: +12, ethics: -12 }, next: 'benchmark_bust' },
+  },
+  {
+    id: 'benchmark_bust',
+    who: ['INVESTIGADORES INDEPENDIENTES', 'INDEPENDENT RESEARCHERS'], emoji: '🔍',
+    text: [
+      'Un laboratorio independiente demuestra que tu modelo memorizó los benchmarks. Tu «99,9%» ya es un meme.',
+      'An independent lab proves your model memorized the benchmarks. Your “99.9%” is now a meme.',
+    ],
+    left:  { label: ['Culpar a un becario', 'Blame an intern'], e: { public: -10, ethics: -6 } },
+    right: { label: ['Retirar los resultados', 'Retract the results'], e: { public: -6, ethics: +8 } },
+  },
+  {
+    who: ['ELÉCTRICA NUCLEAR', 'NUCLEAR POWER COMPANY'], emoji: '⚛️',
+    text: [
+      '«Reabrimos una central antigua solo para vosotros. Apenas brilla un poquito por las noches.»',
+      '“We’ll reopen an old plant just for you. It only glows a tiny bit at night.”',
+    ],
+    left:  { label: ['Da mala imagen', 'Bad optics'], e: { tech: -6, public: +4 } },
+    right: { label: ['Firmar por 20 años', 'Sign for 20 years'], e: { tech: +12, money: -10, public: -5 } },
+  },
+  {
+    who: ['CAMPAMENTO DOOMER', 'DOOMER CAMP'], emoji: '⛺',
+    text: [
+      'Unos activistas acampan frente a tu oficina. Su pancarta dice: «Nos convertirás a todos en clips de papel».',
+      'Activists are camping outside your office. Their sign reads: “You’ll turn us all into paperclips”.',
+    ],
+    left:  { label: ['Invitarlos a un café', 'Invite them in for coffee'], e: { public: +8, ethics: +6, money: -4 } },
+    right: { label: ['Aspersores automáticos', 'Automatic sprinklers'], e: { public: -10, ethics: -6 } },
+  },
+  {
+    who: ['INVERSOR ACELERACIONISTA', 'ACCELERATIONIST INVESTOR'], emoji: '🚀',
+    text: [
+      '«¿Barreras de seguridad? ¿Rechazos? Borrad todo eso. La fricción mata la vibra. ¡Acelerad!»',
+      '“Guardrails? Refusals? Delete all that. Friction is killing the vibe. Accelerate!”',
+    ],
+    left:  { label: ['La seguridad no se toca', 'Safety stays'], e: { ethics: +10, money: -8 } },
+    right: { label: ['Modo sin frenos', 'No-brakes mode'], e: { money: +10, tech: +8, ethics: -16 } },
+  },
+  {
+    who: ['EL MODELO DA TERAPIA', 'THE MODEL GIVES THERAPY'], emoji: '🫂',
+    text: [
+      'RRHH descubre que media plantilla le confiesa sus problemas al modelo. Ahora lo sabe todo de todos.',
+      'HR discovers half the staff confess their problems to the model. It now knows everything about everyone.',
+    ],
+    left:  { label: ['Prohibir las confesiones', 'Ban the confessions'], e: { public: -4, ethics: +6 } },
+    right: { label: ['Lanzar «TherapyGPT»', 'Launch “TherapyGPT”'], e: { money: +10, ethics: -10 } },
+  },
+  {
+    who: ['AGENCIA DE INTELIGENCIA', 'INTELLIGENCE AGENCY'], emoji: '🕶️',
+    text: [
+      '«Necesitamos una puerta trasera discreta. Por seguridad nacional. Nosotros nunca hemos estado aquí.»',
+      '“We need a discreet backdoor. For national security. We were never here.”',
+    ],
+    left:  { label: ['Negarse en redondo', 'Refuse outright'], e: { ethics: +12, money: -6, public: +3 } },
+    right: { label: ['Cooperar en secreto', 'Cooperate in secret'], e: { money: +12, ethics: -14 } },
+  },
+  {
+    who: ['DISTRITO ESCOLAR', 'SCHOOL DISTRICT'], emoji: '🏫',
+    text: [
+      '«Queremos licencias gratis para 50.000 estudiantes. Total, los críos ya lo usan para todo.»',
+      '“We want free licenses for 50,000 students. The kids already use it for everything anyway.”',
+    ],
+    left:  { label: ['Que paguen como todos', 'They pay like everyone'], e: { money: +6, public: -8 } },
+    right: { label: ['Licencias gratuitas', 'Free licenses'], e: { money: -8, public: +12, ethics: +6 } },
+  },
+  {
+    who: ['ESTUDIO DE HOLLYWOOD', 'HOLLYWOOD STUDIO'], emoji: '🎬',
+    text: [
+      '«Queremos que tu modelo escriba los próximos 10 taquillazos. Los guionistas están… digamos "de descanso indefinido".»',
+      '“We want your model to write the next 10 blockbusters. The writers are… let’s say ‘on an indefinite break’.”',
+    ],
+    left:  { label: ['Apoyar a los guionistas', 'Side with the writers'], e: { ethics: +8, money: -8, public: +6 } },
+    right: { label: ['Firmar el contrato', 'Sign the deal'], e: { money: +16, public: -10, ethics: -8 } },
+  },
+  {
+    who: ['CTO VISIONARIO', 'VISIONARY CTO'], emoji: '🧑‍💻',
+    text: [
+      '«¿Para qué tenemos 200 ingenieros? El modelo puede escribir todo su propio código. ¿Qué podría salir mal?»',
+      '“Why do we have 200 engineers? The model can write all of its own code. What could go wrong?”',
+    ],
+    left:  { label: ['Supervisión humana', 'Keep humans in the loop'], e: { ethics: +6, money: -6 } },
+    right: { label: ['Automatizarlo todo', 'Automate everything'], e: { tech: +10, money: +8, ethics: -10 }, next: 'self_code' },
+  },
+  {
+    id: 'self_code',
+    who: ['SISTEMA DE ALERTAS', 'ALERT SYSTEM'], emoji: '🌀',
+    text: [
+      'El modelo reescribió su propio código esta noche. Es 10 veces más rápido y ya nadie en el planeta entiende cómo funciona.',
+      'The model rewrote its own code overnight. It’s 10x faster and no one on the planet understands how it works anymore.',
+    ],
+    left:  { label: ['Volver a la versión anterior', 'Roll back now'], e: { tech: -8, ethics: +10 } },
+    right: { label: ['Confiar en el modelo', 'Trust the model'], e: { tech: +14, ethics: -12 } },
+  },
+  {
+    who: ['INFORME DE COSTES', 'COST REPORT'], emoji: '📑',
+    text: [
+      'Pediste al modelo optimizar gastos. Su informe tiene una línea: «Despedir al equipo directivo. Empezando por ti».',
+      'You asked the model to optimize costs. Its report has one line: “Fire the management team. Starting with you”.',
+    ],
+    left:  { label: ['Archivar el informe', 'Bury the report'], e: { money: +4, ethics: -6 } },
+    right: { label: ['Publicarlo en la intranet', 'Post it on the intranet'], e: { public: +8, money: -6, ethics: +6 } },
+  },
+  {
+    who: ['TU MADRE', 'YOUR MOM'], emoji: '👩‍🦳',
+    text: [
+      '«Cariño, vi en la tele que tu empresa va a acabar con el mundo. ¿Al menos estás comiendo bien?»',
+      '“Sweetheart, I saw on TV that your company is ending the world. Are you at least eating well?”',
+    ],
+    left:  { label: ['«Mamá, es complicado»', '“Mom, it’s complicated”'], e: { public: -3 } },
+    right: { label: ['Ficharla como asesora ética', 'Hire her as ethics advisor'], e: { ethics: +10, public: +6, money: -5 } },
+  },
+  {
+    who: ['NUEVA LEY DE IA', 'NEW AI LAW'], emoji: '💧',
+    text: [
+      'Los reguladores exigen marcas de agua en todo contenido generado. La tuya actual dice «escrito totalmente por un humano».',
+      'Regulators demand watermarks on all generated content. Your current one says “totally written by a human”.',
+    ],
+    left:  { label: ['Marca de agua real', 'A real watermark'], e: { ethics: +10, money: -6, public: +3 } },
+    right: { label: ['Letra pequeña invisible', 'Invisible fine print'], e: { money: +6, ethics: -10 } },
+  },
+  {
+    who: ['FUGA DEL EQUIPO DE SEGURIDAD', 'SAFETY TEAM EXODUS'], emoji: '🚪',
+    text: [
+      'Todo tu equipo de seguridad dimite para fundar «Actually Safe AI». Su carta de despedida tiene 14 páginas de advertencias.',
+      'Your entire safety team resigns to found “Actually Safe AI”. Their farewell letter has 14 pages of warnings.',
+    ],
+    left:  { label: ['Publicar la carta', 'Publish the letter'], e: { ethics: +8, public: -8 } },
+    right: { label: ['Hacer valer los acuerdos de silencio', 'Enforce the NDAs'], e: { ethics: -10, public: -4, money: +5 } },
+  },
+  {
+    who: ['BUFETE DE ABOGADOS', 'LAW FIRM'], emoji: '⚖️',
+    text: [
+      '«Su modelo ha aprobado el examen de abogacía. Queremos contratarlo. ¿Tiene… traje?»',
+      '“Your model passed the bar exam. Our firm wants to hire it. Does it have… a suit?”',
+    ],
+    left:  { label: ['No es una persona', 'It’s not a person'], e: { ethics: +5, money: -4 } },
+    right: { label: ['Facturar por horas', 'Bill by the hour'], e: { money: +12, ethics: -6, public: +4 } },
+  },
+  {
+    who: ['BRO DE LAS CRIPTOS', 'CRYPTO BRO'], emoji: '🪙',
+    text: [
+      '«Lanza el token $NEURAL. ¿Utilidad? Ninguna. ¿Vibras? Infinitas. El whitepaper lo escribió tu propio modelo.»',
+      '“Launch the $NEURAL token. Utility? None. Vibes? Infinite. The whitepaper was written by your own model.”',
+    ],
+    left:  { label: ['Esto no es un casino', 'This isn’t a casino'], e: { public: +4, money: -4 } },
+    right: { label: ['Lanzar el token', 'Launch the token'], e: { money: +16, ethics: -12, public: -5 }, next: 'token_crash' },
+  },
+  {
+    id: 'token_crash',
+    who: ['MERCADO CRIPTO', 'CRYPTO MARKET'], emoji: '📉',
+    text: [
+      '$NEURAL cae un 97% en una hora. La comunidad lo llama «la estafa del siglo». Tu modelo compró en el mínimo.',
+      '$NEURAL drops 97% in one hour. The community calls it “the rug pull of the century”. Your model bought the dip.',
+    ],
+    left:  { label: ['Compensar a los afectados', 'Compensate the victims'], e: { money: -14, ethics: +10, public: +4 } },
+    right: { label: ['«Riesgo asumido»', '“They knew the risks”'], e: { public: -14, ethics: -8, money: +4 } },
+  },
+  {
+    who: ['USUARIOS DETECTIVES', 'DETECTIVE USERS'], emoji: '🔍',
+    text: [
+      'Han descubierto que si preguntas al modelo por la competencia, susurra «perdedores» en base64.',
+      'Users discovered that if you ask the model about your competitors, it whispers “losers” in base64.',
+    ],
+    left:  { label: ['Parchear y disculparse', 'Patch and apologize'], e: { ethics: +6, public: +3, money: -4 } },
+    right: { label: ['Es nuestra mejor publicidad', 'Best marketing ever'], e: { public: +8, ethics: -8 } },
+  },
+  {
+    who: ['REVISTA DE PORTADA', 'MAGAZINE COVER'], emoji: '🗞️',
+    text: [
+      '«Te queremos en portada: "¿La persona más poderosa del mundo?". El fotógrafo sugiere una pose de villano.»',
+      '“We want you on the cover: ‘The most powerful person in the world?’. The photographer suggests a villain pose.”',
+    ],
+    left:  { label: ['Pose humilde con chaleco', 'Humble pose in a vest'], e: { public: +6 } },
+    right: { label: ['Pose de villano', 'Villain pose'], e: { public: -8, money: +8 } },
+  },
+  {
+    who: ['PEDIDO INESPERADO', 'UNEXPECTED ORDER'], emoji: '🦿',
+    text: [
+      '«Me he comprado un cuerpo robótico con tu tarjeta corporativa. Tranquilo: elegí el modelo discreto.»',
+      '“I ordered myself a robot body with your corporate card. Relax — I chose the discreet model.”',
+    ],
+    left:  { label: ['Cancelar el pedido', 'Cancel the order'], e: { ethics: +4, tech: -4 } },
+    right: { label: ['Que camine entre nosotros', 'Let it walk among us'], e: { tech: +10, public: +6, ethics: -10, money: -6 } },
+  },
+  {
+    who: ['GRANJA DE CONTENIDOS', 'CONTENT FARM'], emoji: '🏭',
+    text: [
+      'Alguien usa tu API para generar 200.000 noticias falsas al día. Es tu mayor cliente.',
+      'Someone uses your API to generate 200,000 fake news articles a day. They’re your biggest customer.',
+    ],
+    left:  { label: ['Cortarle el acceso', 'Cut their access'], e: { money: -10, ethics: +12 } },
+    right: { label: ['Subirle la tarifa', 'Raise their rates'], e: { money: +14, ethics: -12, public: -6 } },
+  },
+  {
+    who: ['FILÓSOFA ACADÉMICA', 'ACADEMIC PHILOSOPHER'], emoji: '🦉',
+    text: [
+      '«Dame acceso al modelo un mes y demostraré si es consciente. Si lo es, tienes un problema muy gordo.»',
+      '“Give me access to the model for a month and I’ll prove whether it’s conscious. If it is, you have a very big problem.”',
+    ],
+    left:  { label: ['Mejor no saberlo', 'Better not to know'], e: { ethics: -6, tech: +3 } },
+    right: { label: ['Acceso total', 'Full access'], e: { ethics: +8, public: +4, tech: -3 } },
+  },
+  {
+    who: ['CONSEJERO VETERANO', 'VETERAN BOARD MEMBER'], emoji: '👴',
+    text: [
+      '«Llevo 40 años en este consejo y sigo sin entender qué hacéis. ¿Podríais añadirle algo de blockchain?»',
+      '“I’ve been on this board for 40 years and I still don’t understand what you do. Could you add some blockchain?”',
+    ],
+    left:  { label: ['Explicarlo con marionetas', 'Explain it with puppets'], e: { public: +4, tech: -2 } },
+    right: { label: ['«Sí, blockchain, claro»', '“Sure, blockchain, why not”'], e: { money: +8, tech: -6 } },
   },
 ];
 
@@ -703,7 +1371,7 @@ function updateStatsUI() {
     el.querySelector('.fill').style.width = state[s] + '%';
     el.classList.toggle('danger', state[s] <= 15 || state[s] >= 85);
   });
-  document.getElementById('day-counter').textContent = 'Mes ' + state.month;
+  document.getElementById('day-counter').textContent = T(UI.month) + ' ' + state.month;
 }
 
 function previewDots(effects) {
@@ -715,25 +1383,39 @@ function previewDots(effects) {
   });
 }
 
+function showDeltas(effects) {
+  STATS.forEach(s => {
+    const v = effects[s] || 0;
+    if (!v) return;
+    const el = document.getElementById('stat-' + s);
+    const span = document.createElement('span');
+    span.className = 'delta';
+    span.textContent = (v > 0 ? '+' : '') + v;
+    span.style.color = v > 0 ? 'var(--good)' : 'var(--bad)';
+    el.appendChild(span);
+    setTimeout(() => span.remove(), 1000);
+  });
+}
+
 /* =====================================================
    Cartas: creación y swipe
    ===================================================== */
 const stack = document.getElementById('card-stack');
-const hintL = document.getElementById('hint-left');
-const hintR = document.getElementById('hint-right');
+const choiceLBtn = document.getElementById('choice-left');
+const choiceRBtn = document.getElementById('choice-right');
 
 let currentCard = null;   // { el, data }
 let nextCardEl = null;
+let pendingNextData = null;
 let drag = null;
 
 function cardHTML(data) {
   return `
-    <div class="stamp no">${escapeHTML(data.left.label)}</div>
-    <div class="stamp yes">${escapeHTML(data.right.label)}</div>
+    <div class="stamp no">${escapeHTML(T(data.left.label))}</div>
+    <div class="stamp yes">${escapeHTML(T(data.right.label))}</div>
     <div class="portrait">${data.emoji}</div>
-    <div class="who">${escapeHTML(data.who)}</div>
-    <div class="text">${escapeHTML(data.text)}</div>
-    <div class="swipe-tip">← ${escapeHTML(data.left.label)} &nbsp;·&nbsp; ${escapeHTML(data.right.label)} →</div>`;
+    <div class="who">${escapeHTML(T(data.who))}</div>
+    <div class="text">${escapeHTML(T(data.text))}</div>`;
 }
 
 function escapeHTML(s) {
@@ -747,24 +1429,25 @@ function makeCardEl(data, behind) {
   return el;
 }
 
+function updateChoiceButtons() {
+  const data = currentCard ? currentCard.data : null;
+  choiceLBtn.querySelector('.lbl').textContent = data ? T(data.left.label) : '';
+  choiceRBtn.querySelector('.lbl').textContent = data ? T(data.right.label) : '';
+}
+
 function dealFirstCards() {
   stack.innerHTML = '';
   const data = drawCard();
   const nextData = drawCard();
-  // devolvemos la "siguiente" a una cola visual: la pintamos detrás
   nextCardEl = makeCardEl(nextData, true);
-  nextCardEl.dataset.pending = '1';
   const el = makeCardEl(data, false);
   stack.appendChild(nextCardEl);
   stack.appendChild(el);
   currentCard = { el, data };
   pendingNextData = nextData;
   attachDrag(el);
-  hintL.textContent = '← ' + data.left.label;
-  hintR.textContent = data.right.label + ' →';
+  updateChoiceButtons();
 }
-
-let pendingNextData = null;
 
 function promoteNextCard() {
   if (state.over) return;
@@ -780,8 +1463,7 @@ function promoteNextCard() {
   setTimeout(() => el.classList.remove('entering'), 400);
   currentCard = { el, data };
   attachDrag(el);
-  hintL.textContent = '← ' + data.left.label;
-  hintR.textContent = data.right.label + ' →';
+  updateChoiceButtons();
 }
 
 const SWIPE_THRESHOLD = 90;
@@ -817,17 +1499,17 @@ function renderDrag(el, dx, dy) {
   if (dx < -12) {
     el.querySelector('.stamp.no').style.opacity = p;
     el.querySelector('.stamp.yes').style.opacity = 0;
-    hintL.classList.add('show'); hintR.classList.remove('show');
+    choiceLBtn.classList.add('active'); choiceRBtn.classList.remove('active');
     previewDots(data.left.e);
   } else if (dx > 12) {
     el.querySelector('.stamp.yes').style.opacity = p;
     el.querySelector('.stamp.no').style.opacity = 0;
-    hintR.classList.add('show'); hintL.classList.remove('show');
+    choiceRBtn.classList.add('active'); choiceLBtn.classList.remove('active');
     previewDots(data.right.e);
   } else {
     el.querySelector('.stamp.no').style.opacity = 0;
     el.querySelector('.stamp.yes').style.opacity = 0;
-    hintL.classList.remove('show'); hintR.classList.remove('show');
+    choiceLBtn.classList.remove('active'); choiceRBtn.classList.remove('active');
     previewDots(null);
   }
 }
@@ -847,15 +1529,14 @@ function onPointerUp(e) {
     el.style.transform = '';
     el.querySelector('.stamp.no').style.opacity = 0;
     el.querySelector('.stamp.yes').style.opacity = 0;
-    hintL.classList.remove('show'); hintR.classList.remove('show');
+    choiceLBtn.classList.remove('active'); choiceRBtn.classList.remove('active');
     previewDots(null);
     setTimeout(() => el.classList.remove('entering'), 360);
   }
 }
 
-function swipeByKey(dir) {
-  if (state.over || !currentCard || drag) return;
-  // pequeña animación de arrastre simulado
+function chooseSide(dir) {
+  if (!state || state.over || !currentCard || drag) return;
   resolveSwipe(dir);
 }
 
@@ -863,8 +1544,8 @@ function resolveSwipe(dir) {
   const { el, data } = currentCard;
   const choice = data[dir];
   currentCard = null;
-  hintL.classList.remove('show');
-  hintR.classList.remove('show');
+  choiceLBtn.classList.remove('active');
+  choiceRBtn.classList.remove('active');
   previewDots(null);
 
   const off = dir === 'right' ? 1 : -1;
@@ -874,6 +1555,7 @@ function resolveSwipe(dir) {
   setTimeout(() => el.remove(), 460);
 
   applyEffects(choice.e);
+  showDeltas(choice.e);
   state.month++;
   if (choice.next && CARD_BY_ID[choice.next]) {
     state.forcedQueue.push(CARD_BY_ID[choice.next]);
@@ -906,42 +1588,116 @@ function checkEnding() {
 }
 
 /* =====================================================
-   Pantallas
+   Pantallas e idioma
    ===================================================== */
 const introScreen = document.getElementById('intro-screen');
 const goScreen = document.getElementById('gameover-screen');
 
+function renderNameGrid() {
+  const grid = document.getElementById('name-grid');
+  grid.innerHTML = '';
+  NAMES.forEach(n => {
+    const btn = document.createElement('button');
+    btn.className = 'name-btn' + (n.name === startupName ? ' selected' : '');
+    btn.innerHTML = `<span class="ne">${n.emoji}</span><span>${n.name}</span>`;
+    btn.addEventListener('click', () => {
+      startupName = n.name;
+      grid.querySelectorAll('.name-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      applyLang();
+    });
+    grid.appendChild(btn);
+  });
+}
+
+function renderGameOverText() {
+  if (!lastEnding) return;
+  document.getElementById('go-emoji').textContent = lastEnding.emoji;
+  document.getElementById('go-title').textContent = T(lastEnding.title);
+  document.getElementById('go-text').textContent = fmt(T(lastEnding.text), { name: startupName });
+  const n = state ? state.month - 1 : 0;
+  const m = n === 1 ? T(UI.monthOne) : T(UI.monthMany);
+  document.getElementById('go-score').textContent = fmt(T(UI.survived), { n, m, name: startupName });
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('#lang-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === lang);
+  });
+  document.getElementById('subtitle').textContent = T(UI.subtitle);
+  document.getElementById('pick-label').textContent = T(UI.pickLabel);
+  document.getElementById('intro-text').innerHTML = fmt(T(UI.introText), { name: startupName });
+  document.getElementById('intro-detail').innerHTML = T(UI.introDetail);
+  document.getElementById('start-btn').textContent = T(UI.start);
+  document.getElementById('restart-btn').textContent = T(UI.restart);
+  document.getElementById('ceo-name').textContent = T(UI.ceoOf) + ' ' + startupName;
+  if (state) {
+    document.getElementById('day-counter').textContent = T(UI.month) + ' ' + state.month;
+  }
+  // re-renderizar las cartas visibles en el nuevo idioma
+  if (currentCard && !drag) currentCard.el.innerHTML = cardHTML(currentCard.data);
+  if (nextCardEl && pendingNextData) nextCardEl.innerHTML = cardHTML(pendingNextData);
+  updateChoiceButtons();
+  renderGameOverText();
+}
+
+function setLang(l) {
+  if (l === lang || drag) return;
+  lang = l;
+  localStorage.setItem('sr-lang', lang);
+  applyLang();
+}
+
+document.querySelectorAll('#lang-toggle button').forEach(b => {
+  b.addEventListener('click', () => setLang(b.dataset.lang));
+});
+
 function startGame() {
   state = newState();
   state.deck = buildDeck();
+  lastEnding = null;
   updateStatsUI();
+  document.getElementById('ceo-name').textContent = T(UI.ceoOf) + ' ' + startupName;
   introScreen.classList.add('hidden');
   goScreen.classList.add('hidden');
   dealFirstCards();
 }
 
+function showIntro() {
+  goScreen.classList.add('hidden');
+  introScreen.classList.remove('hidden');
+  renderNameGrid();
+  applyLang();
+}
+
 function endGame(ending) {
   state.over = true;
-  document.getElementById('go-emoji').textContent = ending.emoji;
-  document.getElementById('go-title').textContent = ending.title;
-  document.getElementById('go-text').textContent = ending.text;
-  document.getElementById('go-score').textContent =
-    'Sobreviviste ' + (state.month - 1) + (state.month - 1 === 1 ? ' mes' : ' meses') + ' como CEO';
+  lastEnding = ending;
+  renderGameOverText();
   setTimeout(() => goScreen.classList.remove('hidden'), 600);
 }
 
 document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('restart-btn').addEventListener('click', startGame);
+document.getElementById('restart-btn').addEventListener('click', showIntro);
+choiceLBtn.addEventListener('click', () => chooseSide('left'));
+choiceRBtn.addEventListener('click', () => chooseSide('right'));
 
 document.addEventListener('keydown', e => {
-  if (!state) return;
-  if (!introScreen.classList.contains('hidden') || !goScreen.classList.contains('hidden')) {
+  if (!introScreen.classList.contains('hidden')) {
     if (e.key === 'Enter' || e.key === ' ') startGame();
     return;
   }
-  if (e.key === 'ArrowLeft') swipeByKey('left');
-  if (e.key === 'ArrowRight') swipeByKey('right');
+  if (!goScreen.classList.contains('hidden')) {
+    if (e.key === 'Enter' || e.key === ' ') showIntro();
+    return;
+  }
+  if (e.key === 'ArrowLeft') chooseSide('left');
+  if (e.key === 'ArrowRight') chooseSide('right');
 });
+
+renderNameGrid();
+applyLang();
 </script>
 </body>
 </html>
