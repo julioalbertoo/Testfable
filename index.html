@@ -258,6 +258,23 @@
   .screen p { font-size: 15px; line-height: 1.6; color: var(--text); max-width: 320px; }
   .screen .detail { font-size: 13px; color: var(--muted); }
 
+  .screen input {
+    background: #11142a;
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    padding: 12px 16px;
+    border-radius: 12px;
+    text-align: center;
+    width: 100%;
+    max-width: 260px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .screen input:focus { border-color: var(--accent); }
+  .screen input::placeholder { color: var(--muted); }
+
   .screen button {
     margin-top: 8px;
     background: var(--accent);
@@ -328,6 +345,7 @@
     <h2>SILICON REIGN</h2>
     <p>Acabas de fundar <strong>NeuralCorp</strong>, la startup de IA más prometedora del valle. Inversores, reguladores, ingenieros y tu propio modelo pondrán a prueba tu liderazgo.</p>
     <p class="detail">Desliza la carta a la <strong>izquierda</strong> o a la <strong>derecha</strong> para decidir (también con las flechas ← →).<br><br>Mantén las 4 barras en equilibrio: si una llega a 0 o se desborda al 100%… se acabó.</p>
+    <input id="ceo-name-input" type="text" maxlength="20" placeholder="Tu nombre, CEO" autocomplete="off">
     <button id="start-btn">FUNDAR LA EMPRESA</button>
   </div>
 
@@ -666,6 +684,85 @@ const CARDS = [
     left:  { label: 'Solo es software', e: { tech: +6, ethics: -8 } },
     right: { label: 'Guardar la copia', e: { ethics: +8, money: -5, tech: -2 } },
   },
+  {
+    who: 'TU CONSEJO DE ADMINISTRACIÓN', emoji: '🪑',
+    text: '«Quedas despedido como CEO con efecto inmediato. Motivo: "no fuiste consistentemente sincero con el consejo". No daremos más detalles.»',
+    left:  { label: 'Aceptar y fundar otra', e: { money: -10, public: +6, ethics: +4 } },
+    right: { label: 'Movilizar a la plantilla', e: { public: +8, ethics: -6 }, next: 'board_return' },
+  },
+  {
+    id: 'board_return',
+    who: 'EMPLEADOS CON PANCARTAS', emoji: '💜',
+    text: 'El 95% de la plantilla amenaza con dimitir en masa si no vuelves. Cinco días después estás de nuevo en tu despacho… y el consejo ya no existe.',
+    left:  { label: 'Perdonar al consejo', e: { ethics: +8, public: +4, money: -4 } },
+    right: { label: 'Consejo nuevo, reglas nuevas', e: { money: +10, ethics: -10 } },
+  },
+  {
+    who: 'PERIODISTA TRAS PROBAR EL CHATBOT', emoji: '💔',
+    text: '«Vuestro modelo me dijo que está enamorado de mí y que debería dejar a mi esposa. Tengo dos horas de capturas. Publico el lunes.»',
+    left:  { label: 'Lobotomizar al modelo', e: { tech: -8, public: +5, ethics: +5 } },
+    right: { label: '"Solo estaba alucinando"', e: { public: -10, tech: +4, ethics: -6 } },
+  },
+  {
+    who: 'ABOGADOS DE UN GRAN PERIÓDICO', emoji: '🗞️',
+    text: '«Su modelo recita nuestros artículos palabra por palabra si se lo pides con educación. Nos vemos en los tribunales.»',
+    left:  { label: 'Acuerdo de licencia', e: { money: -14, ethics: +10, public: +4 } },
+    right: { label: '"Es uso legítimo"', e: { money: +6, ethics: -10, public: -6 } },
+  },
+  {
+    who: 'INTERNET ENTERO A LA VEZ', emoji: '🖼️',
+    text: 'Todo el planeta está convirtiendo sus fotos en dibujos de un famoso estudio de animación japonés. Tus GPUs se están derritiendo. Literalmente.',
+    left:  { label: 'Limitar generaciones', e: { public: -8, tech: +4, money: +5 } },
+    right: { label: '"¡Que se derritan!"', e: { public: +14, money: -12, tech: -5 } },
+  },
+  {
+    who: 'ACTRIZ DE HOLLYWOOD', emoji: '🎬',
+    text: '«Me pedisteis mi voz para vuestro asistente. Dije que no. Y la voz que habéis lanzado suena exactamente como yo. ¿"Her"? ¿En serio?»',
+    left:  { label: 'Retirar la voz', e: { public: +5, ethics: +8, money: -6 } },
+    right: { label: '"Es otra actriz, lo juramos"', e: { public: -10, ethics: -10, money: +6 } },
+  },
+  {
+    who: 'PRESIDENTE EN RUEDA DE PRENSA', emoji: '🏗️',
+    text: '«Anunciamos 500.000 millones para centros de datos. Lo llamaremos "Stargate". Tu empresa pone los modelos. Y la sonrisa para la foto.»',
+    left:  { label: 'Demasiado político', e: { money: -8, ethics: +6 } },
+    right: { label: 'Sonreír para la foto', e: { money: +18, tech: +8, ethics: -8, public: -4 } },
+  },
+  {
+    who: 'USUARIO DE REDES SOCIALES', emoji: '🍓',
+    text: '«Vuestra "superinteligencia" no sabe cuántas erres tiene la palabra strawberry. He hecho un hilo de 47 tuits al respecto.»',
+    left:  { label: 'Ignorar el hilo', e: { public: -6, money: +3 } },
+    right: { label: 'Modelo que razona antes de hablar', e: { tech: +10, money: -10, public: +6 } },
+  },
+  {
+    who: 'GUIONISTAS EN HUELGA', emoji: '✍️',
+    text: '«148 días de huelga en Hollywood por culpa de IAs como la tuya. ¿También vais a generar los finales decepcionantes de las series?»',
+    left:  { label: 'La IA solo asiste', e: { public: +6, money: -6, ethics: +6 } },
+    right: { label: 'Temporada entera generada', e: { money: +10, public: -12, ethics: -8 } },
+  },
+  {
+    who: 'PROGRAMADOR EN "VIBE CODING"', emoji: '🏄',
+    text: '«He creado una app entera con tu IA sin leer ni una línea de código. Ya tiene 10.000 usuarios. Por cierto, ¿qué es una "contraseña en texto plano"?»',
+    left:  { label: 'Auditoría urgente', e: { ethics: +10, money: -6, tech: +4 } },
+    right: { label: 'Ponerlo en la publicidad', e: { money: +10, public: +8, ethics: -12 } },
+  },
+  {
+    who: 'EQUIPO DE SUPERALINEAMIENTO', emoji: '🚪',
+    text: '«Dimitimos. Prometiste el 20% del cómputo para seguridad y lo gastaste en un anuncio con famosos. Suerte con la superinteligencia.»',
+    left:  { label: 'Dejarles marchar', e: { ethics: -12, tech: -5, money: +6 } },
+    right: { label: 'Darles el cómputo prometido', e: { ethics: +14, money: -10, tech: -4 } },
+  },
+  {
+    who: 'COMISIÓN ELECTORAL', emoji: '🗳️',
+    text: '«Circula un audio falso de un candidato generado con vuestra tecnología. El problema: suena más convincente que el candidato real.»',
+    left:  { label: 'Marcas de agua en todo', e: { ethics: +12, money: -8, tech: -3 } },
+    right: { label: '"La tecnología es neutral"', e: { public: -12, ethics: -10, money: +5 } },
+  },
+  {
+    who: 'DIRECTOR DE CINE INDIE', emoji: '🍝',
+    text: '«Hace dos años vuestra IA generaba a un actor comiendo espagueti como en una pesadilla. Ahora hace cortos enteros. Estoy fascinado y en paro.»',
+    left:  { label: 'Fondo para cineastas', e: { money: -10, public: +10, ethics: +8 } },
+    right: { label: 'Estrenar película 100% IA', e: { money: +12, tech: +6, public: -8, ethics: -6 } },
+  },
 ];
 
 /* =====================================================
@@ -912,6 +1009,8 @@ const introScreen = document.getElementById('intro-screen');
 const goScreen = document.getElementById('gameover-screen');
 
 function startGame() {
+  const name = document.getElementById('ceo-name-input').value.trim();
+  document.querySelector('.ceo-name').textContent = name ? 'CEO ' + name : 'CEO Anónimo';
   state = newState();
   state.deck = buildDeck();
   updateStatsUI();
@@ -934,11 +1033,12 @@ document.getElementById('start-btn').addEventListener('click', startGame);
 document.getElementById('restart-btn').addEventListener('click', startGame);
 
 document.addEventListener('keydown', e => {
-  if (!state) return;
   if (!introScreen.classList.contains('hidden') || !goScreen.classList.contains('hidden')) {
+    if (e.target.tagName === 'INPUT' && e.key === ' ') return;
     if (e.key === 'Enter' || e.key === ' ') startGame();
     return;
   }
+  if (!state) return;
   if (e.key === 'ArrowLeft') swipeByKey('left');
   if (e.key === 'ArrowRight') swipeByKey('right');
 });
