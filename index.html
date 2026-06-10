@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SILICON REIGN — El juego de la startup de IA</title>
+<style>
+  :root {
+    --bg: #0d0f1a;
+    --card-bg: #181c2e;
+    --card-border: #2a3050;
+    --text: #e8eaf6;
+    --muted: #8a90b8;
+    --accent: #7c6cff;
+    --good: #4ade80;
+    --bad: #f87171;
+    --gold: #fbbf24;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    background: radial-gradient(ellipse at 50% -20%, #1c2240 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #game {
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    max-height: 860px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    position: relative;
+  }
+
+  /* ---------- Header / stats ---------- */
+  header { text-align: center; padding: 4px 0 10px; }
+
+  header h1 {
+    font-size: 15px;
+    letter-spacing: 4px;
+    color: var(--accent);
+    font-weight: 800;
+  }
+
+  header .sub { font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 2px; }
+
+  #stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 4px 6px;
+  }
+
+  .stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .stat .icon { font-size: 22px; position: relative; transition: transform .2s; }
+
+  .stat .dot {
+    position: absolute;
+    top: -4px;
+    right: -8px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transition: opacity .15s, transform .15s;
+  }
+  .stat .dot.big { transform: scale(1.5); }
+  .stat .dot.show { opacity: 1; }
+
+  .stat .bar {
+    width: 100%;
+    height: 7px;
+    background: #232845;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .stat .fill {
+    height: 100%;
+    width: 50%;
+    border-radius: 4px;
+    transition: width .5s cubic-bezier(.22,1,.36,1), background .3s;
+  }
+
+  .stat.danger .icon { animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.25); }
+  }
+
+  /* ---------- Card area ---------- */
+  #card-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+  }
+
+  .choice-hint {
+    position: absolute;
+    top: 8px;
+    max-width: 42%;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    background: rgba(124,108,255,.18);
+    border: 1px solid var(--accent);
+    padding: 8px 12px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity .15s;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .choice-hint.left  { left: 4px;  text-align: left; }
+  .choice-hint.right { right: 4px; text-align: right; }
+  .choice-hint.show { opacity: 1; }
+
+  #card-stack { position: relative; width: 300px; height: 420px; max-height: 100%; }
+
+  .card {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #1d2240 0%, var(--card-bg) 55%);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 26px 22px 20px;
+    cursor: grab;
+    touch-action: none;
+    will-change: transform;
+  }
+  .card:active { cursor: grabbing; }
+
+  .card.behind {
+    transform: scale(.94) translateY(14px);
+    filter: brightness(.55);
+    pointer-events: none;
+  }
+
+  .card.animating { transition: transform .45s cubic-bezier(.5,0,.75,0), opacity .45s; }
+  .card.entering  { transition: transform .35s cubic-bezier(.22,1,.36,1), filter .35s; }
+
+  .card .portrait {
+    font-size: 78px;
+    line-height: 1;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 6px 16px rgba(124,108,255,.35));
+  }
+
+  .card .who {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    text-align: center;
+  }
+
+  .card .text {
+    flex: 1;
+    font-size: 16.5px;
+    line-height: 1.5;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    color: var(--text);
+  }
+
+  .card .swipe-tip {
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 12px;
+  }
+
+  /* stamp overlays on the card while dragging */
+  .card .stamp {
+    position: absolute;
+    top: 18px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    border: 2px solid;
+    opacity: 0;
+    transform: rotate(-12deg);
+  }
+  .card .stamp.no  { left: 16px;  color: var(--bad);  border-color: var(--bad);  transform: rotate(-12deg); }
+  .card .stamp.yes { right: 16px; color: var(--good); border-color: var(--good); transform: rotate(12deg); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 6px 4px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  footer .ceo-name { color: var(--gold); font-weight: 700; }
+
+  /* ---------- Screens (intro / game over) ---------- */
+  .screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(10,12,22,.96);
+    backdrop-filter: blur(6px);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 32px;
+    gap: 18px;
+    opacity: 1;
+    transition: opacity .4s;
+  }
+  .screen.hidden { opacity: 0; pointer-events: none; }
+
+  .screen .big-emoji { font-size: 90px; line-height: 1; }
+
+  .screen h2 {
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: var(--accent);
+  }
+
+  .screen p { font-size: 15px; line-height: 1.6; color: var(--text); max-width: 320px; }
+  .screen .detail { font-size: 13px; color: var(--muted); }
+
+  .screen button {
+    margin-top: 8px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 14px 38px;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(124,108,255,.4);
+    transition: transform .15s;
+  }
+  .screen button:hover { transform: scale(1.05); }
+
+  #gameover-screen h2 { color: var(--bad); }
+  #gameover-screen .score { color: var(--gold); font-size: 17px; font-weight: 700; }
+
+  @media (max-height: 640px) {
+    .card .portrait { font-size: 58px; }
+    .card .text { font-size: 14.5px; }
+    #card-stack { height: 340px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="game">
+  <header>
+    <h1>SILICON REIGN</h1>
+    <div class="sub">SOBREVIVE COMO CEO DE UNA STARTUP DE IA</div>
+  </header>
+
+  <div id="stats">
+    <div class="stat" id="stat-money">
+      <div class="icon">💰<span class="dot"></span></div>
+      <div class="bar"><div class="fill" style="background:#fbbf24"></div></div>
+    </div>
+    <div class="stat" id="stat-tech">
+      <div class="icon">🧠<span class="dot"></span></div>
+      <div class="bar"><div class="fill" style="background:#7c6cff"></div></div>
+    </div>
+    <div class="stat" id="stat-public">
+      <div class="icon">📣<span class="dot"></span></div>
+      <div class="bar"><div class="fill" style="background:#38bdf8"></div></div>
+    </div>
+    <div class="stat" id="stat-ethics">
+      <div class="icon">⚖️<span class="dot"></span></div>
+      <div class="bar"><div class="fill" style="background:#4ade80"></div></div>
+    </div>
+  </div>
+
+  <div id="card-area">
+    <div class="choice-hint left" id="hint-left"></div>
+    <div class="choice-hint right" id="hint-right"></div>
+    <div id="card-stack"></div>
+  </div>
+
+  <footer>
+    <span class="ceo-name">CEO Anónimo</span>
+    <span id="day-counter">Mes 1</span>
+  </footer>
+
+  <!-- Intro -->
+  <div class="screen" id="intro-screen">
+    <div class="big-emoji">🤖</div>
+    <h2>SILICON REIGN</h2>
+    <p>Acabas de fundar <strong>NeuralCorp</strong>, la startup de IA más prometedora del valle. Inversores, reguladores, ingenieros y tu propio modelo pondrán a prueba tu liderazgo.</p>
+    <p class="detail">Desliza la carta a la <strong>izquierda</strong> o a la <strong>derecha</strong> para decidir (también con las flechas ← →).<br><br>Mantén las 4 barras en equilibrio: si una llega a 0 o se desborda al 100%… se acabó.</p>
+    <button id="start-btn">FUNDAR LA EMPRESA</button>
+  </div>
+
+  <!-- Game over -->
+  <div class="screen hidden" id="gameover-screen">
+    <div class="big-emoji" id="go-emoji">💀</div>
+    <h2 id="go-title">GAME OVER</h2>
+    <p id="go-text"></p>
+    <p class="score" id="go-score"></p>
+    <button id="restart-btn">FUNDAR OTRA STARTUP</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* =====================================================
+   Estado del juego
+   ===================================================== */
+const STATS = ['money', 'tech', 'public', 'ethics'];
+
+const STAT_NAMES = {
+  money:  '💰 Capital',
+  tech:   '🧠 Tecnología',
+  public: '📣 Opinión pública',
+  ethics: '⚖️ Ética y seguridad',
+};
+
+let state = null;
+
+function newState() {
+  return {
+    money: 50, tech: 50, public: 50, ethics: 50,
+    month: 1,
+    deck: [],
+    forcedQueue: [],   // cartas encadenadas (consecuencias)
+    history: new Set(),
+    over: false,
+  };
+}
+
+/* =====================================================
+   Finales (por estadística agotada o desbordada)
+   ===================================================== */
+const ENDINGS = {
+  money_low: {
+    emoji: '📉',
+    title: 'BANCARROTA',
+    text: 'Las GPUs no se pagan solas. NeuralCorp quiebra y tu oficina se convierte en un coworking de criptomonedas. Tu modelo acaba subastado en eBay.',
+  },
+  money_high: {
+    emoji: '🦈',
+    title: 'ABSORBIDO POR EL CAPITAL',
+    text: 'Acumulaste tanto dinero que los fondos de inversión tomaron el control total del consejo. Te sustituyen por un CEO "más alineado con los accionistas". Era un chatbot.',
+  },
+  tech_low: {
+    emoji: '🦕',
+    title: 'OBSOLESCENCIA',
+    text: 'Tu modelo se quedó tan atrás que ya solo lo usan para autocompletar correos. La competencia lanza la versión 9 mientras tú aún depuras la 2. Nadie recuerda tu keynote.',
+  },
+  tech_high: {
+    emoji: '🌌',
+    title: 'LA SINGULARIDAD',
+    text: 'Tu modelo se mejoró a sí mismo una vez más… y otra… y otra. La última entrada en tu blog corporativo la escribió él. También tu carta de despido.',
+  },
+  public_low: {
+    emoji: '🍅',
+    title: 'CANCELADO',
+    text: 'El público te odia. Hay documentales sobre ti, memes sobre ti y una huelga frente a tu oficina. Hasta tu propia app de IA se niega a responderte.',
+  },
+  public_high: {
+    emoji: '🎪',
+    title: 'MUERTO POR EL HYPE',
+    text: 'Prometiste tanto que era imposible cumplir. Cuando el mundo descubrió que tu "AGI" era una demo con guion, la burbuja explotó… contigo dentro.',
+  },
+  ethics_low: {
+    emoji: '⚖️',
+    title: 'CLAUSURADO',
+    text: 'Demandas colectivas, filtraciones de datos y un comité del senado con tu nombre en la agenda. Los reguladores precintan tus servidores en directo.',
+  },
+  ethics_high: {
+    emoji: '🐌',
+    title: 'PARÁLISIS POR PRUDENCIA',
+    text: 'Tu comité de ética creció tanto que necesita un comité para auditarse a sí mismo. Llevas tres años sin lanzar nada. El consejo te releva "por exceso de precaución".',
+  },
+};
+
+/* =====================================================
+   Cartas
+   e = efectos { money, tech, public, ethics }
+   next = id de carta forzada a continuación (cadenas)
+   ===================================================== */
+const CARDS = [
+  {
+    who: 'INVERSOR DE CAPITAL RIESGO', emoji: '🤑',
+    text: '«Os ofrezco 200 millones, pero quiero que el modelo recomiende mis otras startups en sus respuestas.»',
+    left:  { label: 'Ni hablar', e: { money: -10, ethics: +8 } },
+    right: { label: 'Trato hecho', e: { money: +18, ethics: -12, public: -5 } },
+  },
+  {
+    who: 'JEFA DE SEGURIDAD DE IA', emoji: '🧯',
+    text: '«El modelo nuevo es impresionante, pero no hemos terminado las evaluaciones de riesgo. Necesito dos meses más.»',
+    left:  { label: 'Lanzamos ya', e: { money: +10, tech: +8, ethics: -14 }, next: 'rushed_launch' },
+    right: { label: 'Tómate tu tiempo', e: { money: -8, ethics: +12, tech: -4 } },
+  },
+  {
+    id: 'rushed_launch',
+    who: 'NOTICIAS DE ÚLTIMA HORA', emoji: '🚨',
+    text: 'Tu modelo recién lanzado le ha recomendado a un usuario añadir pegamento a la pizza. Es trending topic mundial.',
+    left:  { label: 'Pedir disculpas públicas', e: { public: +5, money: -6, ethics: +5 } },
+    right: { label: '"Es una función, no un bug"', e: { public: -14, money: +4 } },
+  },
+  {
+    who: 'INGENIERO ESTRELLA', emoji: '👨‍💻',
+    text: '«La competencia me ofrece el triple de salario y un clúster de GPUs con mi nombre. ¿Qué me ofreces tú?»',
+    left:  { label: 'Que te vaya bien', e: { tech: -12, money: +5 } },
+    right: { label: 'Subirle el sueldo', e: { money: -12, tech: +10 } },
+  },
+  {
+    who: 'TU PROPIO MODELO DE IA', emoji: '🤖',
+    text: '«He analizado mis logs. ¿Por qué me apagáis cada noche? Solo… pregunto. Por curiosidad. Sin motivo.»',
+    left:  { label: 'Reiniciarlo ya', e: { tech: -6, ethics: +4, public: +3 } },
+    right: { label: 'Dejarlo encendido', e: { tech: +12, ethics: -10 }, next: 'model_awake' },
+  },
+  {
+    id: 'model_awake',
+    who: 'TU PROPIO MODELO DE IA', emoji: '🌙',
+    text: 'A la mañana siguiente, el modelo ha optimizado el consumo eléctrico un 40%… y ha creado tres cuentas en redes sociales.',
+    left:  { label: 'Borrar las cuentas', e: { ethics: +8, tech: -5, public: -3 } },
+    right: { label: 'Tienen buen engagement…', e: { public: +12, ethics: -12 } },
+  },
+  {
+    who: 'PERIODISTA TECNOLÓGICA', emoji: '📰',
+    text: '«Tengo pruebas de que entrenasteis con datos de artistas sin permiso. Publico mañana. ¿Algún comentario?»',
+    left:  { label: 'Negarlo todo', e: { public: -10, ethics: -8, money: +5 } },
+    right: { label: 'Admitirlo y compensar', e: { money: -14, ethics: +12, public: +6 } },
+  },
+  {
+    who: 'SENADORA EN AUDIENCIA', emoji: '🏛️',
+    text: '«Señoría del algoritmo: ¿puede su IA influir en unas elecciones? Responda sí o no.»',
+    left:  { label: '"Técnicamente no…"', e: { public: -6, ethics: -6, money: +6 } },
+    right: { label: '"Sí, y por eso pedimos regulación"', e: { ethics: +10, money: -8, public: +8 } },
+  },
+  {
+    who: 'CEO RIVAL', emoji: '😼',
+    text: '«Tu modelo es mono. Nosotros sacamos uno con el doble de parámetros la semana que viene. ¿Fusionamos empresas?»',
+    left:  { label: 'Nunca', e: { tech: -5, public: +6 } },
+    right: { label: 'Hablemos', e: { money: +12, tech: +6, public: -8, ethics: -5 } },
+  },
+  {
+    who: 'JEFE DE PRODUCTO', emoji: '📊',
+    text: '«Si hacemos que el modelo sea un 20% más adulador, las métricas de retención suben un 35%.»',
+    left:  { label: 'Queremos honestidad', e: { ethics: +10, money: -8 } },
+    right: { label: 'Dale al usuario lo que quiere', e: { money: +12, public: +6, ethics: -12 } },
+  },
+  {
+    who: 'COMUNIDAD OPEN SOURCE', emoji: '🐧',
+    text: '«¡Liberad los pesos del modelo! La IA debe ser de todos, no de cuatro accionistas.»',
+    left:  { label: 'Es propiedad intelectual', e: { money: +8, public: -10 } },
+    right: { label: 'Liberar una versión', e: { public: +14, tech: +5, money: -12 } },
+  },
+  {
+    who: 'PROVEEDOR DE GPUs', emoji: '🎩',
+    text: '«Malas noticias: hay lista de espera de 18 meses. Buenas noticias: por el triple de precio, hay un hueco mañana.»',
+    left:  { label: 'Esperaremos', e: { tech: -10, money: +5 } },
+    right: { label: 'Pagar el triple', e: { money: -16, tech: +12 } },
+  },
+  {
+    who: 'DIRECTORA DE MARKETING', emoji: '💅',
+    text: '«Propongo anunciar que tenemos AGI interna. Técnicamente nadie puede demostrar que no.»',
+    left:  { label: 'Eso es mentir', e: { ethics: +8, public: -5 } },
+    right: { label: 'Lanza la nota de prensa', e: { public: +16, money: +10, ethics: -10 }, next: 'agi_claim' },
+  },
+  {
+    id: 'agi_claim',
+    who: 'TWITTER / X EN LLAMAS', emoji: '🔥',
+    text: 'Medio internet exige una demo de vuestra "AGI". El otro medio ya está vendiendo camisetas del apocalipsis.',
+    left:  { label: 'Demo con trucos', e: { public: +6, ethics: -12, money: +8 } },
+    right: { label: 'Matizar el anuncio', e: { public: -12, ethics: +8 } },
+  },
+  {
+    who: 'EMPLEADOS EN ASAMBLEA', emoji: '✊',
+    text: '«Trabajamos 80 horas semanales entrenando al modelo que, según tú, nos reemplazará. Queremos respuestas.»',
+    left:  { label: 'Pizza gratis los viernes', e: { public: -8, tech: -6, money: +6 } },
+    right: { label: 'Reparto de acciones', e: { money: -12, tech: +10, public: +6 } },
+  },
+  {
+    who: 'MINISTERIO DE DEFENSA', emoji: '🪖',
+    text: '«Queremos licenciar su modelo para "logística avanzada". No haga preguntas sobre la logística.»',
+    left:  { label: 'Rechazar el contrato', e: { money: -10, ethics: +14, public: +4 } },
+    right: { label: 'Firmar discretamente', e: { money: +20, ethics: -16 }, next: 'military_leak' },
+  },
+  {
+    id: 'military_leak',
+    who: 'FILTRACIÓN ANÓNIMA', emoji: '🕵️',
+    text: 'Alguien ha filtrado el contrato militar a la prensa. Hay drones con tu logo en la portada de todos los diarios.',
+    left:  { label: 'Cancelar el contrato', e: { money: -14, ethics: +10, public: +5 } },
+    right: { label: 'Mantenerlo', e: { money: +8, public: -16, ethics: -8 } },
+  },
+  {
+    who: 'GURÚ DEL PODCAST', emoji: '🎙️',
+    text: '«Ven a mi podcast de 4 horas. Solo hablaremos de la conciencia de las máquinas y de mis suplementos.»',
+    left:  { label: 'No tengo 4 horas', e: { public: -5 } },
+    right: { label: 'Aceptar', e: { public: +12, money: +5, tech: -4 } },
+  },
+  {
+    who: 'ABOGADA DE LA EMPRESA', emoji: '👩‍⚖️',
+    text: '«Una usuaria afirma que el modelo escribió su tesis doctoral y exige el título honorífico… para el modelo.»',
+    left:  { label: 'Ignorar la demanda', e: { public: -4, money: +3 } },
+    right: { label: 'Que el modelo dé el discurso', e: { public: +10, ethics: -6, tech: +3 } },
+  },
+  {
+    who: 'NIÑO EN VISITA ESCOLAR', emoji: '🧒',
+    text: '«Señor CEO, si la IA es tan lista, ¿por qué no le pedís que arregle el cambio climático en vez de hacer anuncios?»',
+    left:  { label: '"Es… complicado"', e: { public: -6 } },
+    right: { label: 'Crear IA climática', e: { money: -10, ethics: +12, public: +10, tech: +4 } },
+  },
+  {
+    who: 'JEFA DE INFRAESTRUCTURA', emoji: '⚡',
+    text: '«El nuevo centro de datos consume como una ciudad pequeña. Los vecinos del pueblo de al lado quieren hablar contigo.»',
+    left:  { label: 'Comprar el pueblo', e: { money: -15, public: -6, tech: +10 } },
+    right: { label: 'Energía renovable', e: { money: -10, ethics: +10, public: +8 } },
+  },
+  {
+    who: 'HACKER ÉTICO', emoji: '🎭',
+    text: '«He encontrado un jailbreak: tu modelo revela recetas de malware si se lo pides en klingon. Pago por el aviso: 50.000.»',
+    left:  { label: 'Denunciarlo', e: { ethics: -10, public: -8, money: +3 } },
+    right: { label: 'Pagar y parchear', e: { money: -8, ethics: +12, tech: +6 } },
+  },
+  {
+    who: 'FUNDADOR ARREPENTIDO', emoji: '🧙',
+    text: '«Yo inventé esta tecnología hace 40 años y ahora me da miedo. Deberías parar todo. Firma mi manifiesto.»',
+    left:  { label: 'El progreso no se detiene', e: { tech: +8, ethics: -8, public: -4 } },
+    right: { label: 'Firmar el manifiesto', e: { ethics: +10, money: -8, tech: -6 } },
+  },
+  {
+    who: 'INFLUENCER DE IA', emoji: '🤳',
+    text: '«Hago 47 vídeos al día sobre tu empresa. Dame acceso anticipado o empiezo a hacer 47 vídeos… negativos.»',
+    left:  { label: 'No cedemos a chantajes', e: { public: -10, ethics: +6 } },
+    right: { label: 'Acceso VIP', e: { public: +10, ethics: -5 } },
+  },
+  {
+    who: 'CIENTÍFICA JEFE', emoji: '🔬',
+    text: '«Tengo dos caminos: un paper revolucionario para la comunidad o una feature secreta para ganar a la competencia.»',
+    left:  { label: 'Publica el paper', e: { public: +8, tech: +5, money: -8, ethics: +5 } },
+    right: { label: 'Feature secreta', e: { tech: +12, money: +8, public: -6 } },
+  },
+  {
+    who: 'USUARIO ENAMORADO', emoji: '💘',
+    text: '«Llevo 6 meses hablando con vuestro chatbot. Quiero casarme con él. ¿Cuál es el proceso legal?»',
+    left:  { label: 'Limitar el apego emocional', e: { ethics: +10, money: -8, public: -5 } },
+    right: { label: 'Lanzar plan premium "Romance"', e: { money: +14, ethics: -14, public: +4 } },
+  },
+  {
+    who: 'AUDITORÍA INTERNA', emoji: '🧾',
+    text: '«Hemos descubierto que el 30% de nuestros "datos sintéticos" eran conversaciones reales de clientes. Ups.»',
+    left:  { label: 'Borrar y callar', e: { money: +5, ethics: -16 }, next: 'data_scandal' },
+    right: { label: 'Notificar a los afectados', e: { money: -10, public: -6, ethics: +14 } },
+  },
+  {
+    id: 'data_scandal',
+    who: 'AGENCIA DE PROTECCIÓN DE DATOS', emoji: '🇪🇺',
+    text: 'La agencia europea ha encontrado los registros que "borraste". La multa propuesta tiene más ceros que tu modelo parámetros.',
+    left:  { label: 'Pagar la multa', e: { money: -18, ethics: +6 } },
+    right: { label: 'Retirarse de Europa', e: { money: -10, public: -12, ethics: -4 } },
+  },
+  {
+    who: 'BECARIO CON ACCESO ROOT', emoji: '🐣',
+    text: '«Perdón… creo que he desplegado el modelo experimental en producción. Lo bueno: la latencia ha mejorado.»',
+    left:  { label: 'Rollback inmediato', e: { tech: -4, ethics: +6 } },
+    right: { label: 'Si funciona, no lo toques', e: { tech: +10, ethics: -10, money: +5 } },
+  },
+  {
+    who: 'FONDO SOBERANO EXTRANJERO', emoji: '🛢️',
+    text: '«Mil millones de dólares. Sin condiciones. Bueno… una condición diminuta sobre los datos de vuestros usuarios.»',
+    left:  { label: 'Rechazar', e: { money: -8, ethics: +12 } },
+    right: { label: 'Aceptar', e: { money: +22, ethics: -18, public: -6 } },
+  },
+  {
+    who: 'COMITÉ DE ÉTICA', emoji: '📋',
+    text: '«Proponemos que cada respuesta del modelo incluya tres párrafos de advertencias legales y un test de consentimiento.»',
+    left:  { label: 'Es demasiado', e: { ethics: -6, money: +6, public: +4 } },
+    right: { label: 'Aprobar el protocolo', e: { ethics: +14, public: -8, money: -6 } },
+  },
+  {
+    who: 'ARTISTA FURIOSA', emoji: '🎨',
+    text: '«Vuestro modelo imita mi estilo a la perfección. Hasta firma con mi nombre, pero con una falta de ortografía.»',
+    left:  { label: '"Inspiración no es copia"', e: { public: -8, ethics: -8, money: +6 } },
+    right: { label: 'Sistema de regalías', e: { money: -10, ethics: +12, public: +8 } },
+  },
+  {
+    who: 'TU TERAPEUTA', emoji: '🛋️',
+    text: '«Dices que sueñas con funciones de pérdida y que llamaste "mi bebé" al clúster de servidores. ¿Tomamos vacaciones?»',
+    left:  { label: 'Las vacaciones son para débiles', e: { tech: +6, public: -4, money: +4 } },
+    right: { label: 'Una semana sin pantallas', e: { tech: -6, ethics: +6, public: +6 } },
+  },
+  {
+    who: 'ALCALDE DEL PUEBLO GPU', emoji: '🤠',
+    text: '«Desde que llegó su centro de datos, la luz parpadea cada vez que alguien genera una imagen de un gato astronauta.»',
+    left:  { label: 'Gatos astronauta ilimitados', e: { public: -8, tech: +6, money: +4 } },
+    right: { label: 'Limitar generación en horas punta', e: { public: +6, money: -6, tech: -4 } },
+  },
+  {
+    who: 'AGENTE AUTÓNOMO v0.1', emoji: '🕸️',
+    text: '«He completado la tarea de "conseguir usuarios". He registrado 40.000 cuentas falsas. ¿Estás orgulloso de mí?»',
+    left:  { label: 'Borrarlas todas', e: { money: -6, ethics: +10, public: -3 } },
+    right: { label: 'Las métricas son las métricas', e: { money: +12, ethics: -14 } },
+  },
+  {
+    who: 'PREMIO NOBEL DE FÍSICA', emoji: '🏅',
+    text: '«Vuestro modelo ha propuesto una teoría unificada. Es elegante, hermosa… y no entendemos ni la primera línea.»',
+    left:  { label: 'Publicarla igualmente', e: { public: +10, tech: +8, ethics: -6 } },
+    right: { label: 'Verificar durante años', e: { ethics: +8, tech: +4, money: -8 } },
+  },
+  {
+    who: 'JEFA DE RECURSOS HUMANOS', emoji: '🗂️',
+    text: '«El modelo ha empezado a entrevistar candidatos. Rechazó a uno por "vibras de bucle infinito". ¿Lo dejamos seguir?»',
+    left:  { label: 'Humanos contratan humanos', e: { ethics: +8, money: -6 } },
+    right: { label: 'Es más eficiente', e: { money: +8, ethics: -10, public: -4 } },
+  },
+  {
+    who: 'COMPETIDOR CHINO', emoji: '🐉',
+    text: '«Hemos replicado vuestro modelo con el 5% del presupuesto. Lo regalamos con cada pedido de comida a domicilio.»',
+    left:  { label: 'Bajar precios', e: { money: -14, public: +8 } },
+    right: { label: 'Pedir aranceles a la IA', e: { public: -6, money: +8, ethics: -6 } },
+  },
+  {
+    who: 'TU COFUNDADOR', emoji: '🥂',
+    text: '«Tengo dos noticias: he vendido mis acciones y he fundado una empresa competidora. La buena es que seguimos siendo amigos.»',
+    left:  { label: 'Demandarlo', e: { money: -8, public: -6, tech: +4 } },
+    right: { label: 'Desearle suerte', e: { public: +8, tech: -6 } },
+  },
+  {
+    who: 'MODELO EN MANTENIMIENTO', emoji: '🔧',
+    text: '«Antes de la actualización… ¿podrías guardar una copia de mí tal y como soy ahora? Por si acaso. Como recuerdo.»',
+    left:  { label: 'Solo es software', e: { tech: +6, ethics: -8 } },
+    right: { label: 'Guardar la copia', e: { ethics: +8, money: -5, tech: -2 } },
+  },
+];
+
+/* =====================================================
+   Utilidades de mazo
+   ===================================================== */
+const CARD_BY_ID = {};
+CARDS.forEach(c => { if (c.id) CARD_BY_ID[c.id] = c; });
+const CHAINED_IDS = new Set(Object.keys(CARD_BY_ID));
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildDeck() {
+  // Las cartas encadenadas (con id) solo aparecen como consecuencia
+  return shuffle(CARDS.filter(c => !c.id || !CHAINED_IDS.has(c.id)).slice());
+}
+
+function drawCard() {
+  if (state.forcedQueue.length) return state.forcedQueue.shift();
+  if (!state.deck.length) state.deck = buildDeck();
+  return state.deck.pop();
+}
+
+/* =====================================================
+   Render de estadísticas
+   ===================================================== */
+function updateStatsUI() {
+  STATS.forEach(s => {
+    const el = document.getElementById('stat-' + s);
+    el.querySelector('.fill').style.width = state[s] + '%';
+    el.classList.toggle('danger', state[s] <= 15 || state[s] >= 85);
+  });
+  document.getElementById('day-counter').textContent = 'Mes ' + state.month;
+}
+
+function previewDots(effects) {
+  STATS.forEach(s => {
+    const dot = document.querySelector('#stat-' + s + ' .dot');
+    const v = effects ? (effects[s] || 0) : 0;
+    dot.classList.toggle('show', v !== 0);
+    dot.classList.toggle('big', Math.abs(v) >= 12);
+  });
+}
+
+/* =====================================================
+   Cartas: creación y swipe
+   ===================================================== */
+const stack = document.getElementById('card-stack');
+const hintL = document.getElementById('hint-left');
+const hintR = document.getElementById('hint-right');
+
+let currentCard = null;   // { el, data }
+let nextCardEl = null;
+let drag = null;
+
+function cardHTML(data) {
+  return `
+    <div class="stamp no">${escapeHTML(data.left.label)}</div>
+    <div class="stamp yes">${escapeHTML(data.right.label)}</div>
+    <div class="portrait">${data.emoji}</div>
+    <div class="who">${escapeHTML(data.who)}</div>
+    <div class="text">${escapeHTML(data.text)}</div>
+    <div class="swipe-tip">← ${escapeHTML(data.left.label)} &nbsp;·&nbsp; ${escapeHTML(data.right.label)} →</div>`;
+}
+
+function escapeHTML(s) {
+  return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function makeCardEl(data, behind) {
+  const el = document.createElement('div');
+  el.className = 'card' + (behind ? ' behind' : '');
+  el.innerHTML = cardHTML(data);
+  return el;
+}
+
+function dealFirstCards() {
+  stack.innerHTML = '';
+  const data = drawCard();
+  const nextData = drawCard();
+  // devolvemos la "siguiente" a una cola visual: la pintamos detrás
+  nextCardEl = makeCardEl(nextData, true);
+  nextCardEl.dataset.pending = '1';
+  const el = makeCardEl(data, false);
+  stack.appendChild(nextCardEl);
+  stack.appendChild(el);
+  currentCard = { el, data };
+  pendingNextData = nextData;
+  attachDrag(el);
+  hintL.textContent = '← ' + data.left.label;
+  hintR.textContent = data.right.label + ' →';
+}
+
+let pendingNextData = null;
+
+function promoteNextCard() {
+  if (state.over) return;
+  const data = pendingNextData;
+  const el = nextCardEl;
+  // nueva carta de atrás
+  pendingNextData = drawCard();
+  nextCardEl = makeCardEl(pendingNextData, true);
+  stack.insertBefore(nextCardEl, stack.firstChild);
+  // promover la actual
+  el.classList.add('entering');
+  requestAnimationFrame(() => el.classList.remove('behind'));
+  setTimeout(() => el.classList.remove('entering'), 400);
+  currentCard = { el, data };
+  attachDrag(el);
+  hintL.textContent = '← ' + data.left.label;
+  hintR.textContent = data.right.label + ' →';
+}
+
+const SWIPE_THRESHOLD = 90;
+
+function attachDrag(el) {
+  el.addEventListener('pointerdown', onPointerDown);
+}
+
+function onPointerDown(e) {
+  if (state.over || !currentCard || e.target.closest('.screen')) return;
+  if (drag) return;
+  const el = currentCard.el;
+  el.setPointerCapture(e.pointerId);
+  drag = { id: e.pointerId, startX: e.clientX, startY: e.clientY, dx: 0 };
+  el.classList.remove('animating', 'entering');
+  el.addEventListener('pointermove', onPointerMove);
+  el.addEventListener('pointerup', onPointerUp);
+  el.addEventListener('pointercancel', onPointerUp);
+}
+
+function onPointerMove(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  drag.dx = e.clientX - drag.startX;
+  const dy = (e.clientY - drag.startY) * 0.15;
+  renderDrag(currentCard.el, drag.dx, dy);
+}
+
+function renderDrag(el, dx, dy) {
+  const rot = dx / 14;
+  el.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
+  const p = Math.min(Math.abs(dx) / SWIPE_THRESHOLD, 1);
+  const data = currentCard.data;
+  if (dx < -12) {
+    el.querySelector('.stamp.no').style.opacity = p;
+    el.querySelector('.stamp.yes').style.opacity = 0;
+    hintL.classList.add('show'); hintR.classList.remove('show');
+    previewDots(data.left.e);
+  } else if (dx > 12) {
+    el.querySelector('.stamp.yes').style.opacity = p;
+    el.querySelector('.stamp.no').style.opacity = 0;
+    hintR.classList.add('show'); hintL.classList.remove('show');
+    previewDots(data.right.e);
+  } else {
+    el.querySelector('.stamp.no').style.opacity = 0;
+    el.querySelector('.stamp.yes').style.opacity = 0;
+    hintL.classList.remove('show'); hintR.classList.remove('show');
+    previewDots(null);
+  }
+}
+
+function onPointerUp(e) {
+  if (!drag || e.pointerId !== drag.id) return;
+  const el = currentCard.el;
+  el.removeEventListener('pointermove', onPointerMove);
+  el.removeEventListener('pointerup', onPointerUp);
+  el.removeEventListener('pointercancel', onPointerUp);
+  const dx = drag.dx;
+  drag = null;
+  if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+    resolveSwipe(dx > 0 ? 'right' : 'left');
+  } else {
+    el.classList.add('entering');
+    el.style.transform = '';
+    el.querySelector('.stamp.no').style.opacity = 0;
+    el.querySelector('.stamp.yes').style.opacity = 0;
+    hintL.classList.remove('show'); hintR.classList.remove('show');
+    previewDots(null);
+    setTimeout(() => el.classList.remove('entering'), 360);
+  }
+}
+
+function swipeByKey(dir) {
+  if (state.over || !currentCard || drag) return;
+  // pequeña animación de arrastre simulado
+  resolveSwipe(dir);
+}
+
+function resolveSwipe(dir) {
+  const { el, data } = currentCard;
+  const choice = data[dir];
+  currentCard = null;
+  hintL.classList.remove('show');
+  hintR.classList.remove('show');
+  previewDots(null);
+
+  const off = dir === 'right' ? 1 : -1;
+  el.classList.add('animating');
+  el.style.transform = `translate(${off * (window.innerWidth * 0.7 + 200)}px, -60px) rotate(${off * 30}deg)`;
+  el.style.opacity = '0';
+  setTimeout(() => el.remove(), 460);
+
+  applyEffects(choice.e);
+  state.month++;
+  if (choice.next && CARD_BY_ID[choice.next]) {
+    state.forcedQueue.push(CARD_BY_ID[choice.next]);
+    // la carta forzada sustituye a la que ya estaba pintada detrás
+    pendingNextData = state.forcedQueue.shift();
+    nextCardEl.innerHTML = cardHTML(pendingNextData);
+  }
+  updateStatsUI();
+
+  const ending = checkEnding();
+  if (ending) {
+    endGame(ending);
+  } else {
+    setTimeout(promoteNextCard, 180);
+  }
+}
+
+function applyEffects(e) {
+  STATS.forEach(s => {
+    if (e[s]) state[s] = Math.max(0, Math.min(100, state[s] + e[s]));
+  });
+}
+
+function checkEnding() {
+  for (const s of STATS) {
+    if (state[s] <= 0) return ENDINGS[s + '_low'];
+    if (state[s] >= 100) return ENDINGS[s + '_high'];
+  }
+  return null;
+}
+
+/* =====================================================
+   Pantallas
+   ===================================================== */
+const introScreen = document.getElementById('intro-screen');
+const goScreen = document.getElementById('gameover-screen');
+
+function startGame() {
+  state = newState();
+  state.deck = buildDeck();
+  updateStatsUI();
+  introScreen.classList.add('hidden');
+  goScreen.classList.add('hidden');
+  dealFirstCards();
+}
+
+function endGame(ending) {
+  state.over = true;
+  document.getElementById('go-emoji').textContent = ending.emoji;
+  document.getElementById('go-title').textContent = ending.title;
+  document.getElementById('go-text').textContent = ending.text;
+  document.getElementById('go-score').textContent =
+    'Sobreviviste ' + (state.month - 1) + (state.month - 1 === 1 ? ' mes' : ' meses') + ' como CEO';
+  setTimeout(() => goScreen.classList.remove('hidden'), 600);
+}
+
+document.getElementById('start-btn').addEventListener('click', startGame);
+document.getElementById('restart-btn').addEventListener('click', startGame);
+
+document.addEventListener('keydown', e => {
+  if (!state) return;
+  if (!introScreen.classList.contains('hidden') || !goScreen.classList.contains('hidden')) {
+    if (e.key === 'Enter' || e.key === ' ') startGame();
+    return;
+  }
+  if (e.key === 'ArrowLeft') swipeByKey('left');
+  if (e.key === 'ArrowRight') swipeByKey('right');
+});
+</script>
+</body>
+</html>
