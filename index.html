@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>SILICON REIGN — El juego de la startup de IA</title>
 <style>
   :root {
@@ -19,9 +23,16 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-  html, body { height: 100%; overflow: hidden; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
 
   body {
+    /* 100dvh sigue la barra de direcciones móvil; 100% es el fallback */
+    height: 100dvh;
     background: radial-gradient(ellipse at 50% -20%, #1c2240 0%, var(--bg) 60%);
     color: var(--text);
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -30,6 +41,8 @@
     align-items: center;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
   }
 
   #game {
@@ -40,6 +53,11 @@
     display: flex;
     flex-direction: column;
     padding: 12px 16px;
+    /* respeta notch y barra de gestos en móviles */
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
     position: relative;
   }
 
@@ -138,7 +156,11 @@
   .choice-hint.right { right: 4px; text-align: right; }
   .choice-hint.show { opacity: 1; }
 
-  #card-stack { position: relative; width: 300px; height: 420px; max-height: 100%; }
+  #card-stack {
+    position: relative;
+    width: min(300px, 100%);
+    height: min(420px, 100%);
+  }
 
   .card {
     position: absolute;
@@ -185,7 +207,7 @@
 
   .card .text {
     flex: 1;
-    font-size: 16.5px;
+    font-size: clamp(13.5px, 4.4vw, 16.5px);
     line-height: 1.5;
     text-align: center;
     display: flex;
@@ -278,9 +300,23 @@
   #gameover-screen .score { color: var(--gold); font-size: 17px; font-weight: 700; }
 
   @media (max-height: 640px) {
-    .card .portrait { font-size: 58px; }
-    .card .text { font-size: 14.5px; }
-    #card-stack { height: 340px; }
+    .card .portrait { font-size: 58px; margin-bottom: 6px; }
+    .card .text { font-size: clamp(12.5px, 4.2vw, 14.5px); }
+    .card { padding: 18px 16px 14px; }
+    #card-stack { height: min(340px, 100%); }
+    header { padding-bottom: 4px; }
+    #stats { padding-top: 6px; }
+    .screen .big-emoji { font-size: 64px; }
+    .screen p { font-size: 13.5px; }
+  }
+
+  @media (max-width: 360px) {
+    .card { padding: 20px 14px 16px; }
+    .card .portrait { font-size: 62px; }
+    .choice-hint { font-size: 11.5px; padding: 6px 9px; }
+    .card .swipe-tip { font-size: 9.5px; }
+    header h1 { letter-spacing: 3px; }
+    .screen { padding: 20px; }
   }
 </style>
 </head>
@@ -784,7 +820,10 @@ function promoteNextCard() {
   hintR.textContent = data.right.label + ' →';
 }
 
-const SWIPE_THRESHOLD = 90;
+// Umbral adaptado al ancho de pantalla: más corto en móviles estrechos
+function swipeThreshold() {
+  return Math.min(90, window.innerWidth * 0.24);
+}
 
 function attachDrag(el) {
   el.addEventListener('pointerdown', onPointerDown);
@@ -795,7 +834,7 @@ function onPointerDown(e) {
   if (drag) return;
   const el = currentCard.el;
   el.setPointerCapture(e.pointerId);
-  drag = { id: e.pointerId, startX: e.clientX, startY: e.clientY, dx: 0 };
+  drag = { id: e.pointerId, startX: e.clientX, startY: e.clientY, dx: 0, lastX: e.clientX, lastT: e.timeStamp, vx: 0 };
   el.classList.remove('animating', 'entering');
   el.addEventListener('pointermove', onPointerMove);
   el.addEventListener('pointerup', onPointerUp);
@@ -805,6 +844,11 @@ function onPointerDown(e) {
 function onPointerMove(e) {
   if (!drag || e.pointerId !== drag.id) return;
   drag.dx = e.clientX - drag.startX;
+  if (e.timeStamp > drag.lastT) {
+    drag.vx = (e.clientX - drag.lastX) / (e.timeStamp - drag.lastT);
+    drag.lastX = e.clientX;
+    drag.lastT = e.timeStamp;
+  }
   const dy = (e.clientY - drag.startY) * 0.15;
   renderDrag(currentCard.el, drag.dx, dy);
 }
@@ -812,7 +856,7 @@ function onPointerMove(e) {
 function renderDrag(el, dx, dy) {
   const rot = dx / 14;
   el.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg)`;
-  const p = Math.min(Math.abs(dx) / SWIPE_THRESHOLD, 1);
+  const p = Math.min(Math.abs(dx) / swipeThreshold(), 1);
   const data = currentCard.data;
   if (dx < -12) {
     el.querySelector('.stamp.no').style.opacity = p;
@@ -839,8 +883,10 @@ function onPointerUp(e) {
   el.removeEventListener('pointerup', onPointerUp);
   el.removeEventListener('pointercancel', onPointerUp);
   const dx = drag.dx;
+  // un flick rápido (> 0.5 px/ms) en la misma dirección también decide
+  const flick = Math.abs(drag.vx) > 0.5 && Math.sign(drag.vx) === Math.sign(dx) && Math.abs(dx) > 25;
   drag = null;
-  if (Math.abs(dx) >= SWIPE_THRESHOLD) {
+  if (Math.abs(dx) >= swipeThreshold() || flick) {
     resolveSwipe(dx > 0 ? 'right' : 'left');
   } else {
     el.classList.add('entering');
