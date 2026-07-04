@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#fffaf0">
 <title>Usera — Historia y evolución del distrito (Madrid)</title>
 <meta name="description" content="Mapas, fotografías y cronología de la evolución del distrito de Usera (Madrid): de las huertas del Manzanares al Chinatown madrileño.">
 
@@ -64,7 +65,10 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+  /* los anclajes (#mapa, #chinatown…) no deben quedar tapados por la nav sticky */
+  [id] { scroll-margin-top: 76px; }
   body {
     background: var(--canvas);
     color: var(--body);
@@ -98,6 +102,8 @@
     border-bottom: 1px solid var(--hairline);
     display: flex; align-items: center; gap: var(--sp-lg);
     padding: 0 var(--sp-lg);
+    padding-left: max(var(--sp-lg), env(safe-area-inset-left));
+    padding-right: max(var(--sp-lg), env(safe-area-inset-right));
   }
   .top-nav .brand {
     font-size: 16px; font-weight: 600; letter-spacing: -0.3px;
@@ -220,9 +226,20 @@
   .photo-grid figure.photo { margin: 0; }
 
   /* ---------- Mapa Leaflet (product-mockup-card) ---------- */
-  #mapa-usera { height: 480px; z-index: 1; }
+  #mapa-usera { height: 480px; z-index: 1; position: relative; }
   .map-card { margin-top: var(--sp-lg); padding: var(--sp-lg); }
   .map-card #mapa-usera { border-radius: var(--rounded-md); overflow: hidden; }
+
+  /* aviso "usa dos dedos" en táctil */
+  .map-touch-hint {
+    position: absolute; inset: 0; z-index: 900;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(10,10,10,.45);
+    color: #fff; font-size: 15px; font-weight: 600; text-align: center;
+    padding: var(--sp-lg); border-radius: var(--rounded-md);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .map-touch-hint.show { opacity: 1; }
   .map-legend {
     font-size: 13px; font-weight: 500; color: var(--muted);
     margin-top: var(--sp-md);
@@ -406,8 +423,28 @@
     .hero .grid { grid-template-columns: 1fr; gap: var(--sp-xl); }
     .hero { padding: var(--sp-xxl) 0; }
     main section { padding-top: 64px; }
+    main { padding-bottom: 64px; }
     h1 { letter-spacing: -1.5px; }
     h2 { letter-spacing: -1px; }
+
+    .container {
+      padding: 0 var(--sp-md);
+      padding-left: max(var(--sp-md), env(safe-area-inset-left));
+      padding-right: max(var(--sp-md), env(safe-area-inset-right));
+    }
+    .top-nav { height: 56px; gap: var(--sp-sm); }
+    [id] { scroll-margin-top: 68px; }
+
+    /* el mapa aprovecha todo el ancho de la tarjeta */
+    .map-card { padding: var(--sp-sm); }
+    #mapa-usera { height: min(420px, 60vh); }
+    .map-legend { padding: 0 6px; gap: var(--sp-xs) var(--sp-md); }
+
+    .feature-card { padding: var(--sp-lg); }
+    .cta-band { margin-top: 64px; }
+    blockquote { padding: var(--sp-md); }
+    .lede { font-size: 17px; }
+    footer { padding-top: var(--sp-xxl); }
   }
 </style>
 </head>
@@ -1137,6 +1174,27 @@ window.addEventListener('load', function () {
   el.innerHTML = '';
   var map = L.map(el, { scrollWheelZoom: false }).setView([40.379, -3.702], 13.4);
 
+  // En táctil, arrastrar con un dedo debe desplazar la página, no el mapa:
+  // se desactiva el drag de un dedo y se deja el gesto de dos dedos (touchZoom).
+  var isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (isTouch) {
+    map.dragging.disable();
+    var hint = document.createElement('div');
+    hint.className = 'map-touch-hint';
+    hint.textContent = 'Usa dos dedos para mover el mapa';
+    el.appendChild(hint);
+    var hintTimer;
+    el.addEventListener('touchmove', function (ev) {
+      if (ev.touches.length === 1) {
+        hint.classList.add('show');
+        clearTimeout(hintTimer);
+        hintTimer = setTimeout(function () { hint.classList.remove('show'); }, 1000);
+      } else {
+        hint.classList.remove('show');
+      }
+    }, { passive: true });
+  }
+
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -1250,9 +1308,11 @@ window.addEventListener('load', function () {
   var ch = mk('line', { 'class': 'crosshair', y1: M.top, y2: M.top + ih, x1: -10, x2: -10, opacity: 0 });
   var tip = document.getElementById('tooltip');
 
-  svg.addEventListener('mousemove', function (ev) {
+  // pointermove/pointerdown cubren ratón y toque (tap en móvil)
+  var touchHideTimer;
+  function showTooltip(clientX) {
     var r = svg.getBoundingClientRect();
-    var px = (ev.clientX - r.left) * (W / r.width);
+    var px = (clientX - r.left) * (W / r.width);
     var year = x0 + (px - M.left) / iw * (x1 - x0);
     var best = datos[0];
     datos.forEach(function (d) { if (Math.abs(d[0] - year) < Math.abs(best[0] - year)) best = d; });
@@ -1262,10 +1322,46 @@ window.addEventListener('load', function () {
     tip.style.left = (r.left + window.scrollX + sx * (r.width / W)) + 'px';
     tip.style.top = (r.top + window.scrollY + Y(best[1]) * (r.height / H)) + 'px';
     tip.style.opacity = 1;
-  });
-  svg.addEventListener('mouseleave', function () {
+  }
+  function hideTooltip() {
     ch.setAttribute('opacity', 0);
     tip.style.opacity = 0;
+  }
+  function onPointer(ev) {
+    showTooltip(ev.clientX);
+    clearTimeout(touchHideTimer);
+    // en toque no hay "pointerleave" útil: se oculta solo tras unos segundos
+    if (ev.pointerType !== 'mouse') touchHideTimer = setTimeout(hideTooltip, 2500);
+  }
+  svg.addEventListener('pointermove', onPointer);
+  svg.addEventListener('pointerdown', onPointer);
+  svg.addEventListener('pointerleave', function (ev) {
+    if (ev.pointerType === 'mouse') hideTooltip();
+  });
+})();
+
+/* ================= Scrollspy de la navegación ================= */
+(function () {
+  var tabs = document.querySelectorAll('.top-nav .tabs a');
+  if (!tabs.length || !('IntersectionObserver' in window)) return;
+  var byId = {};
+  tabs.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+  var current = null;
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      var a = byId[e.target.id];
+      if (!a || a === current) return;
+      if (current) current.classList.remove('active');
+      current = a;
+      a.classList.add('active');
+      // centra la pestaña activa en la barra desplazable (clave en móvil)
+      a.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+  Object.keys(byId).forEach(function (id) {
+    var s = document.getElementById(id);
+    if (s) io.observe(s);
   });
 })();
 </script>
