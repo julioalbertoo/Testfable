@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Usera — Historia y evolución del distrito (Madrid)</title>
+<meta name="description" content="Mapas, fotografías y cronología de la evolución del distrito de Usera (Madrid): de las huertas del Manzanares al Chinatown madrileño.">
+
+<!-- Leaflet (mapa interactivo). Si no hay red, la página degrada con un aviso. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+
+<style>
+  :root {
+    --paper:        #faf7f1;
+    --paper-2:      #f1ebe0;
+    --card:         #ffffff;
+    --ink:          #241f1a;
+    --ink-2:        #5c544a;
+    --ink-3:        #8a8175;
+    --line:         #e2d9ca;
+    --accent:       #b4471f;   /* terracota */
+    --accent-soft:  #f3ddd2;
+    --river:        #7ea8c4;
+    --park:         #6f9a5d;
+    --chart-series: #2a78d6;   /* azul validado para la serie de datos */
+    --chart-fill:   rgba(42, 120, 214, 0.14);
+    --shadow: 0 1px 2px rgba(36,31,26,.06), 0 8px 24px rgba(36,31,26,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:        #1e1b17;
+      --paper-2:      #26221d;
+      --card:         #2b2620;
+      --ink:          #f0eae0;
+      --ink-2:        #c4bbac;
+      --ink-3:        #948a7b;
+      --line:         #3d362e;
+      --accent:       #e07850;
+      --accent-soft:  #47301f;
+      --river:        #6c96b4;
+      --park:         #7fa96c;
+      --chart-series: #3987e5;
+      --chart-fill:   rgba(57, 135, 229, 0.18);
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.65;
+  }
+  .sans { font-family: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+
+  a { color: var(--accent); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    padding: 72px 24px 56px;
+    text-align: center;
+    background:
+      radial-gradient(1100px 420px at 50% -160px, var(--accent-soft), transparent 70%),
+      var(--paper);
+    border-bottom: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .hero .kicker {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: .35em;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .hero h1 {
+    font-size: clamp(44px, 9vw, 96px);
+    font-weight: 400;
+    letter-spacing: .02em;
+    line-height: 1.05;
+  }
+  .hero .sub {
+    max-width: 640px;
+    margin: 18px auto 0;
+    font-size: 19px;
+    color: var(--ink-2);
+    font-style: italic;
+  }
+  .hero .dates {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    margin-top: 26px;
+    font-size: 13px;
+    letter-spacing: .18em;
+    color: var(--ink-3);
+  }
+  .hero .dates b { color: var(--ink); font-weight: 600; }
+  .hero-river {
+    position: absolute; left: 0; right: 0; bottom: -4px;
+    width: 100%; height: 46px; display: block; opacity: .5;
+  }
+
+  /* ---------- Nav ---------- */
+  nav.eras {
+    position: sticky; top: 0; z-index: 1000;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  nav.eras .wrap { display: inline-flex; gap: 4px; padding: 10px 16px; }
+  nav.eras a {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px;
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+  }
+  nav.eras a:hover { color: var(--accent); border-color: var(--line); background: var(--card); }
+
+  /* ---------- Layout ---------- */
+  main { max-width: 980px; margin: 0 auto; padding: 0 20px 80px; }
+  section { padding-top: 64px; }
+  .section-label {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px; letter-spacing: .3em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  h2 { font-size: clamp(28px, 4.5vw, 40px); font-weight: 400; line-height: 1.15; margin-bottom: 18px; }
+  h3 { font-size: 21px; font-weight: 600; margin: 26px 0 8px; }
+  p + p { margin-top: 12px; }
+  .lede { font-size: 19px; color: var(--ink-2); }
+  .note {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-3); margin-top: 10px;
+  }
+
+  /* ---------- Cards / figures ---------- */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  figure.photo { margin: 26px 0; }
+  figure.photo .frame {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  figure.photo img { display: block; width: 100%; height: auto; }
+  figure.photo figcaption {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-3);
+    padding: 10px 4px 0;
+  }
+  .img-fallback {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 180px; padding: 24px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px; color: var(--ink-3);
+    background: repeating-linear-gradient(45deg, var(--paper-2), var(--paper-2) 12px, var(--card) 12px, var(--card) 24px);
+    text-align: center;
+  }
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .photo-grid { grid-template-columns: 1fr; } }
+  .photo-grid figure.photo { margin: 0; }
+
+  /* ---------- Timeline ---------- */
+  .timeline { position: relative; margin-top: 34px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px;
+    width: 2px; background: var(--line);
+  }
+  .t-item { position: relative; padding: 0 0 40px 40px; }
+  .t-item::before {
+    content: ''; position: absolute; left: 0; top: 7px;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent); border: 3px solid var(--paper);
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .t-item .year {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .t-item h3 { margin-top: 2px; }
+
+  /* ---------- Mapa Leaflet ---------- */
+  #mapa-usera { height: 480px; border-radius: 14px; z-index: 1; }
+  .map-shell { position: relative; margin-top: 24px; }
+  .map-legend {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-2); margin-top: 10px;
+    display: flex; flex-wrap: wrap; gap: 14px;
+  }
+  .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .leaflet-popup-content { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; line-height: 1.5; }
+  .leaflet-popup-content b { display: block; margin-bottom: 2px; }
+
+  /* ---------- Mapas SVG de evolución ---------- */
+  .evo-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px; margin-top: 26px;
+  }
+  .evo-card { padding: 14px; }
+  .evo-card svg { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .evo-card .evo-title {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-weight: 700; font-size: 15px; margin: 10px 2px 2px;
+  }
+  .evo-card .evo-sub {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-2); margin: 0 2px;
+  }
+  .evo-legend {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-2);
+    display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px;
+  }
+  .evo-legend .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; vertical-align: -2px; margin-right: 6px; border: 1px solid var(--line); }
+
+  /* Colores de los mapas SVG por variables (modo claro/oscuro) */
+  .evo-svg .campo    { fill: var(--paper-2); }
+  .evo-svg .rio      { fill: var(--river); opacity: .85; }
+  .evo-svg .camino   { stroke: var(--ink-3); stroke-width: 2.4; fill: none; stroke-linecap: round; }
+  .evo-svg .urbano   { fill: var(--accent); opacity: .78; }
+  .evo-svg .chabolas { fill: var(--ink-3); opacity: .8; }
+  .evo-svg .parque   { fill: var(--park); opacity: .85; }
+  .evo-svg .hito     { fill: var(--ink); }
+  .evo-svg text      { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 10.5px; fill: var(--ink-2); }
+  .evo-svg text.agua { fill: var(--paper); font-style: italic; }
+  .evo-svg .borde    { stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 5 4; fill: none; opacity: .55; }
+
+  /* ---------- Gráfico de población ---------- */
+  .viz-root {
+    --surface-1: var(--card);
+    --text-primary: var(--ink);
+    --text-secondary: var(--ink-2);
+    --series-1: var(--chart-series);
+    padding: 22px 22px 12px;
+    margin-top: 26px;
+  }
+  .viz-root .viz-title {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px; font-weight: 700; color: var(--text-primary);
+  }
+  .viz-root .viz-sub {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;
+  }
+  #chart-pop { width: 100%; height: auto; display: block; }
+  #chart-pop .gridline { stroke: var(--line); stroke-width: 1; }
+  #chart-pop .axis-label { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 11px; fill: var(--ink-3); }
+  #chart-pop .serie { stroke: var(--series-1); stroke-width: 2; fill: none; }
+  #chart-pop .area  { fill: var(--chart-fill); }
+  #chart-pop .punto { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  #chart-pop .crosshair { stroke: var(--ink-3); stroke-width: 1; stroke-dasharray: 3 3; }
+  #chart-pop .direct-label { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 12px; font-weight: 700; fill: var(--text-primary); }
+  .viz-tooltip {
+    position: absolute; pointer-events: none;
+    background: var(--ink); color: var(--paper);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px; line-height: 1.4;
+    padding: 6px 10px; border-radius: 8px;
+    transform: translate(-50%, -130%);
+    white-space: nowrap; opacity: 0; transition: opacity .12s;
+    z-index: 20;
+  }
+  details.data-table { margin: 8px 0 6px; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; }
+  details.data-table summary { cursor: pointer; color: var(--ink-2); }
+  details.data-table table { border-collapse: collapse; margin-top: 10px; width: 100%; max-width: 420px; }
+  details.data-table th, details.data-table td {
+    text-align: left; padding: 5px 10px; border-bottom: 1px solid var(--line); color: var(--ink-2);
+  }
+  details.data-table th { color: var(--ink); }
+
+  /* ---------- Barrios ---------- */
+  .barrios-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px; margin-top: 26px;
+  }
+  .barrio { padding: 18px 20px; }
+  .barrio .num {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .1em;
+  }
+  .barrio h3 { margin: 4px 0 6px; font-size: 19px; }
+  .barrio p { font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+
+  /* ---------- Cita ---------- */
+  blockquote {
+    margin: 30px 0; padding: 20px 26px;
+    border-left: 4px solid var(--accent);
+    background: var(--card); border-radius: 0 14px 14px 0;
+    font-size: 20px; font-style: italic; color: var(--ink-2);
+  }
+  blockquote cite { display: block; margin-top: 8px; font-size: 13px; font-style: normal; font-family: 'Segoe UI', system-ui, sans-serif; color: var(--ink-3); }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+    padding: 40px 24px 60px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 13px; color: var(--ink-2);
+  }
+  footer .wrap { max-width: 980px; margin: 0 auto; }
+  footer h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .2em; color: var(--ink-3); margin-bottom: 10px; }
+  footer ul { list-style: none; }
+  footer li { margin: 4px 0; }
+
+  /* ---------- Reveal ---------- */
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.on { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================ HERO ============================ -->
+<header class="hero">
+  <div class="kicker">Distrito 12 · Madrid</div>
+  <h1>Usera</h1>
+  <p class="sub">De las huertas del Manzanares al Chinatown madrileño:
+  la historia de un distrito que se construyó a sí mismo.</p>
+  <div class="dates sans">PALEOLÍTICO · <b>1718</b> · <b>1925</b> · <b>1948–1954</b> · <b>1987</b> · HOY</div>
+  <svg class="hero-river" viewBox="0 0 1200 46" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,30 C150,10 300,44 450,26 C600,8 750,42 900,24 C1020,10 1120,34 1200,22 L1200,46 L0,46 Z" fill="var(--river)"/>
+  </svg>
+</header>
+
+<!-- ============================ NAV ============================ -->
+<nav class="eras" aria-label="Épocas">
+  <div class="wrap">
+    <a href="#mapa">🗺️ Mapa</a>
+    <a href="#evolucion">Evolución</a>
+    <a href="#origenes">Orígenes</a>
+    <a href="#fundacion">1900–1936</a>
+    <a href="#guerra">Guerra y posguerra</a>
+    <a href="#desarrollismo">1950–1975</a>
+    <a href="#vecinal">Lucha vecinal</a>
+    <a href="#distrito">El distrito</a>
+    <a href="#chinatown">Chinatown</a>
+    <a href="#poblacion">Población</a>
+    <a href="#barrios">Barrios</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============================ MAPA INTERACTIVO ============================ -->
+<section id="mapa" class="reveal">
+  <div class="section-label">Mapa interactivo</div>
+  <h2>El territorio, hoy</h2>
+  <p class="lede">Usera ocupa la margen derecha del Manzanares, al sur del casco histórico,
+  entre el río, la avenida de Córdoba y la M-40. Pulsa sobre los puntos para recorrer
+  los lugares que articulan su historia.</p>
+
+  <div class="map-shell">
+    <div id="mapa-usera" class="card">
+      <div class="img-fallback" id="mapa-fallback" style="height:100%">
+        El mapa interactivo necesita conexión a internet (OpenStreetMap).<br>
+        Puedes consultar los mapas históricos de la sección «Evolución» más abajo.
+      </div>
+    </div>
+    <div class="map-legend sans">
+      <span><span class="dot" style="background:#b4471f"></span> Hitos históricos</span>
+      <span><span class="dot" style="background:#2a78d6"></span> Equipamientos y transporte</span>
+      <span><span class="dot" style="background:#4f8a3d"></span> Parques y río</span>
+      <span>— — Límite aproximado del distrito</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ EVOLUCIÓN (MAPAS SVG) ============================ -->
+<section id="evolucion" class="reveal">
+  <div class="section-label">Cartografía de una metamorfosis</div>
+  <h2>Cinco mapas, un siglo y medio</h2>
+  <p class="lede">El mismo encuadre —el Manzanares al norte, los caminos de Toledo y
+  Andalucía como espinas dorsales— repetido en cinco momentos. Así se urbanizó Usera.</p>
+
+  <div class="evo-grid">
+
+    <!-- ~1860-1900 -->
+    <div class="card evo-card">
+      <svg class="evo-svg" viewBox="0 0 320 250" role="img" aria-label="Mapa esquemático hacia 1900: territorio rural">
+        <rect class="campo" x="0" y="0" width="320" height="250"/>
+        <path class="rio" d="M0,28 C60,10 120,40 180,24 C240,8 290,30 320,18 L320,0 L0,0 Z"/>
+        <text class="agua" x="14" y="18">río Manzanares</text>
+        <path class="camino" d="M78,30 L40,250"/>
+        <path class="camino" d="M96,34 C150,110 220,180 300,250"/>
+        <path class="camino" d="M96,34 L110,250"/>
+        <rect class="hito" x="72" y="26" width="28" height="7" rx="2"/>
+        <text x="60" y="52">Pte. de Toledo (1732)</text>
+        <text x="26" y="140" transform="rotate(80 26 140)">camino de Toledo</text>
+        <text x="196" y="130" transform="rotate(38 196 130)">carretera de Andalucía</text>
+        <g class="chabolas">
+          <circle cx="150" cy="90" r="2.2"/><circle cx="205" cy="150" r="2.2"/>
+          <circle cx="120" cy="180" r="2.2"/><circle cx="245" cy="200" r="2.2"/>
+          <circle cx="175" cy="215" r="2.2"/>
+        </g>
+        <text x="140" y="78">tejares y huertas</text>
+        <path class="borde" d="M0,60 L320,95"/>
+        <text x="200" y="108">término de Villaverde</text>
+      </svg>
+      <div class="evo-title">c. 1860–1900 · Campo</div>
+      <p class="evo-sub">Huertas, tejares y ventas camineras en términos de Villaverde y
+      Carabanchel. Madrid termina al otro lado del puente.</p>
+    </div>
+
+    <!-- 1925-1936 -->
+    <div class="card evo-card">
+      <svg class="evo-svg" viewBox="0 0 320 250" role="img" aria-label="Mapa esquemático 1925-1936: primeras parcelaciones">
+        <rect class="campo" x="0" y="0" width="320" height="250"/>
+        <path class="rio" d="M0,28 C60,10 120,40 180,24 C240,8 290,30 320,18 L320,0 L0,0 Z"/>
+        <path class="camino" d="M78,30 L40,250"/>
+        <path class="camino" d="M96,34 C150,110 220,180 300,250"/>
+        <path class="camino" d="M96,34 L110,250"/>
+        <rect class="hito" x="72" y="26" width="28" height="7" rx="2"/>
+        <polygon class="urbano" points="100,60 150,66 158,120 118,128 96,90"/>
+        <text x="112" y="98" style="fill:var(--paper); font-weight:700">USERA</text>
+        <polygon class="urbano" points="150,50 190,54 186,86 154,84" opacity=".55"/>
+        <text x="196" y="70">Moscardó</text>
+        <text x="104" y="145">parcelación de</text>
+        <text x="104" y="157">Marcelo Usera (1925)</text>
+        <path class="borde" d="M0,60 L320,95"/>
+      </svg>
+      <div class="evo-title">1925–1936 · La barriada</div>
+      <p class="evo-sub">Marcelo Usera parcela sus terrenos junto a la carretera:
+      nace un barrio obrero autoconstruido que ya lleva su nombre.</p>
+    </div>
+
+    <!-- 1940-1955 -->
+    <div class="card evo-card">
+      <svg class="evo-svg" viewBox="0 0 320 250" role="img" aria-label="Mapa esquemático 1940-1955: posguerra, chabolismo y anexión a Madrid">
+        <rect class="campo" x="0" y="0" width="320" height="250"/>
+        <path class="rio" d="M0,28 C60,10 120,40 180,24 C240,8 290,30 320,18 L320,0 L0,0 Z"/>
+        <path class="camino" d="M78,30 L40,250"/>
+        <path class="camino" d="M96,34 C150,110 220,180 300,250"/>
+        <path class="camino" d="M96,34 L110,250"/>
+        <rect class="hito" x="72" y="26" width="28" height="7" rx="2"/>
+        <polygon class="urbano" points="96,55 175,60 185,135 112,142 90,92"/>
+        <g class="chabolas">
+          <rect x="80" y="185" width="5" height="5"/><rect x="90" y="192" width="5" height="5"/>
+          <rect x="100" y="184" width="5" height="5"/><rect x="86" y="200" width="5" height="5"/>
+          <rect x="98" y="205" width="5" height="5"/><rect x="110" y="196" width="5" height="5"/>
+          <rect x="205" y="120" width="5" height="5"/><rect x="215" y="128" width="5" height="5"/>
+          <rect x="208" y="138" width="5" height="5"/><rect x="220" y="145" width="5" height="5"/>
+        </g>
+        <text x="70" y="225">chabolas de Orcasitas</text>
+        <text x="228" y="130">La China</text>
+        <text x="118" y="105" style="fill:var(--paper); font-weight:700">USERA</text>
+        <text x="120" y="243" style="font-weight:700">→ anexión a Madrid, 1948–1954</text>
+      </svg>
+      <div class="evo-title">1940–1955 · Posguerra</div>
+      <p class="evo-sub">Inmigración rural masiva y chabolismo. Carabanchel (1948) y
+      Villaverde (1954) se anexionan a Madrid: Usera pasa a ser capital.</p>
+    </div>
+
+    <!-- 1960-1980 -->
+    <div class="card evo-card">
+      <svg class="evo-svg" viewBox="0 0 320 250" role="img" aria-label="Mapa esquemático 1960-1980: poblados y grandes equipamientos">
+        <rect class="campo" x="0" y="0" width="320" height="250"/>
+        <path class="rio" d="M0,28 C60,10 120,40 180,24 C240,8 290,30 320,18 L320,0 L0,0 Z"/>
+        <path class="camino" d="M78,30 L40,250"/>
+        <path class="camino" d="M96,34 C150,110 220,180 300,250"/>
+        <path class="camino" d="M96,34 L110,250"/>
+        <rect class="hito" x="72" y="26" width="28" height="7" rx="2"/>
+        <polygon class="urbano" points="92,50 200,56 210,140 108,150 86,90"/>
+        <rect class="urbano" x="66" y="170" width="52" height="44" rx="3"/>
+        <text x="68" y="228">Orcasitas</text>
+        <rect class="urbano" x="140" y="178" width="44" height="36" rx="3"/>
+        <text x="142" y="228">Orcasur</text>
+        <rect class="urbano" x="210" y="160" width="46" height="40" rx="3"/>
+        <text x="212" y="214">San Fermín</text>
+        <rect class="hito" x="236" y="112" width="12" height="12" rx="2"/>
+        <text x="300" y="140" text-anchor="end">H. 12 de Octubre (1973)</text>
+        <text x="120" y="100" style="fill:var(--paper); font-weight:700">USERA</text>
+        <text x="100" y="118" style="fill:var(--paper)">Zofío · Almendrales</text>
+      </svg>
+      <div class="evo-title">1960–1980 · Desarrollismo</div>
+      <p class="evo-sub">Poblados de absorción y dirigidos sustituyen al chabolismo.
+      Llegan el hospital, los colegios y los primeros parques.</p>
+    </div>
+
+    <!-- Hoy -->
+    <div class="card evo-card">
+      <svg class="evo-svg" viewBox="0 0 320 250" role="img" aria-label="Mapa esquemático actual: distrito consolidado con parques, M-40 y Caja Mágica">
+        <rect class="campo" x="0" y="0" width="320" height="250"/>
+        <path class="rio" d="M0,28 C60,10 120,40 180,24 C240,8 290,30 320,18 L320,0 L0,0 Z"/>
+        <text class="agua" x="14" y="18">Madrid Río</text>
+        <polygon class="urbano" points="60,46 260,52 280,180 220,225 90,230 52,150" opacity=".6"/>
+        <path class="camino" d="M78,30 L40,250"/>
+        <path class="camino" d="M96,34 C150,110 220,180 300,250"/>
+        <path class="camino" d="M96,34 L110,250"/>
+        <path class="camino" d="M0,238 C110,214 210,214 320,236" style="stroke-width:4; opacity:.7"/>
+        <text x="146" y="222">M-40</text>
+        <ellipse class="parque" cx="150" cy="150" rx="34" ry="22"/>
+        <text x="120" y="184">Pradolongo</text>
+        <rect class="hito" x="252" y="140" width="16" height="16" rx="2"/>
+        <text x="216" y="134">Caja Mágica (2009)</text>
+        <rect class="hito" x="72" y="26" width="28" height="7" rx="2"/>
+        <text x="150" y="86" style="fill:var(--paper); font-weight:700">USERA · 7 barrios</text>
+        <text x="120" y="104" style="fill:var(--paper)">≈ 140.000 vecinos</text>
+      </svg>
+      <div class="evo-title">Hoy · Distrito consolidado</div>
+      <p class="evo-sub">Siete barrios, grandes parques, la Caja Mágica y la mayor
+      comunidad china de España. El distrito mira al río y al sur.</p>
+    </div>
+  </div>
+
+  <div class="evo-legend sans">
+    <span><span class="sw" style="background:var(--river)"></span>Río Manzanares</span>
+    <span><span class="sw" style="background:var(--accent); opacity:.78"></span>Suelo urbanizado</span>
+    <span><span class="sw" style="background:var(--ink-3)"></span>Chabolismo / caseríos</span>
+    <span><span class="sw" style="background:var(--park)"></span>Parques</span>
+  </div>
+  <p class="note">Mapas esquemáticos de elaboración propia; formas y límites simplificados con fines divulgativos.</p>
+</section>
+
+<!-- ============================ ORÍGENES ============================ -->
+<section id="origenes" class="reveal">
+  <div class="section-label">Antes de Usera</div>
+  <h2>Un valle habitado desde el Paleolítico</h2>
+  <p>Mucho antes de que existiera Madrid, las <strong>terrazas del bajo Manzanares</strong> ya
+  eran lugar de paso y de caza. Los areneros de la vega —explotados durante los siglos XIX y XX—
+  sacaron a la luz sílex tallado y restos de fauna que convirtieron el valle en uno de los
+  conjuntos paleolíticos más célebres de Europa. El suelo sobre el que hoy se levanta Usera
+  lleva cientos de miles de años pisado.</p>
+
+  <p>Durante siglos, sin embargo, este territorio fue simplemente <em>campo</em>: tierras de labor,
+  huertas y tejares repartidos entre los términos municipales de <strong>Villaverde</strong> y
+  <strong>Carabanchel Bajo</strong>, cosidos por dos caminos históricos: el <strong>camino real de
+  Toledo</strong> y la <strong>carretera de Andalucía</strong>, por la que entraban a la capital
+  viajeros, arrieros y ganado.</p>
+
+  <p>La gran puerta de este mundo rural hacia Madrid fue el <strong>Puente de Toledo</strong>,
+  levantado entre 1718 y 1732 por <strong>Pedro de Ribera</strong> sobre el Manzanares. Su barroco
+  castizo —con las hornacinas de San Isidro y Santa María de la Cabeza— marcó durante dos siglos
+  el límite exacto entre la ciudad y el campo que después sería Usera.</p>
+
+  <figure class="photo">
+    <div class="frame">
+      <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Puente%20de%20Toledo%2C%20Madrid.jpg?width=1400"
+           alt="Puente de Toledo sobre el río Manzanares, obra barroca de Pedro de Ribera (1718-1732)"
+           loading="lazy">
+    </div>
+    <figcaption>El Puente de Toledo (1718–1732), de Pedro de Ribera: durante dos siglos, la puerta
+    entre Madrid y el campo que hoy es Usera.
+    <a href="https://commons.wikimedia.org/wiki/File:Puente_de_Toledo,_Madrid.jpg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+  </figure>
+
+  <p>A finales del siglo XIX, al pie del puente y en la orilla derecha del río, crecieron los
+  primeros arrabales humildes —<em>Las Injurias</em>, <em>Las Cambroneras</em>— retratados por
+  cronistas y fotógrafos como el reverso pobre de la capital. Eran el anticipo de lo que el
+  siglo XX traería a gran escala.</p>
+
+  <figure class="photo">
+    <div class="frame">
+      <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Las%20Injurias-1900-Facundo%20Ca%C3%B1ada.jpg?width=1400"
+           alt="Detalle del plano de Facundo Cañada (1900) con el arrabal de Las Injurias junto al Manzanares"
+           loading="lazy">
+    </div>
+    <figcaption>El arrabal de Las Injurias junto al Manzanares, en el plano de Facundo Cañada
+    (1900): la ciudad pobre asomándose a la futura Usera.
+    <a href="https://commons.wikimedia.org/wiki/File:Las_Injurias-1900-Facundo_Ca%C3%B1ada.jpg">Wikimedia Commons</a>, dominio público.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================ FUNDACIÓN ============================ -->
+<section id="fundacion" class="reveal">
+  <div class="section-label">1900–1936</div>
+  <h2>El coronel que dio nombre a un distrito</h2>
+  <p class="lede">Usera es de los pocos distritos de Madrid que llevan nombre y apellido:
+  los de <strong>Marcelo Usera Sánchez</strong>, el militar que parceló estas tierras
+  en los años veinte.</p>
+
+  <p>A comienzos del siglo XX, la presión de una capital en crecimiento empujó la vivienda
+  obrera hacia el sur del río, donde el suelo era barato. Hacia <strong>1925</strong>, Marcelo
+  Usera, propietario de amplios terrenos entre la carretera de Andalucía y el camino de
+  Villaverde, decidió <strong>parcelarlos y venderlos</strong> a familias trabajadoras que
+  levantaron sus casas —muchas veces con sus propias manos— en pequeñas parcelas alineadas
+  a lo largo de calles nuevas.</p>
+
+  <p>El eje de aquella retícula fue la actual <strong>calle de Marcelo Usera</strong>, y las
+  calles transversales recibieron los nombres de su familia: <em>Isabelita Usera, Amparo Usera,
+  Gabriel Usera, Nicolás Usera…</em> Un callejero familiar que todavía hoy se conserva y que
+  hace de Usera un caso único en la toponimia madrileña.</p>
+
+  <blockquote>
+    «La barriada creció a golpe de domingo: seis días de fábrica y uno de ladrillo.»
+    <cite>Memoria popular del Usera de entreguerras</cite>
+  </blockquote>
+
+  <p>En los años treinta la <strong>barriada de Usera</strong> era ya un núcleo compacto de
+  casas bajas con corrala y patio, tiendas de barrio y talleres, administrativamente aún
+  dependiente de los municipios de Villaverde y Carabanchel, pero volcado laboralmente
+  hacia Madrid.</p>
+</section>
+
+<!-- ============================ GUERRA Y POSGUERRA ============================ -->
+<section id="guerra" class="reveal">
+  <div class="section-label">1936–1954</div>
+  <h2>Frente de guerra, ciudad de acogida</h2>
+  <p>En noviembre de 1936 la Guerra Civil llegó a las puertas del barrio: el <strong>frente sur
+  de Madrid</strong> se estabilizó en el entorno del Manzanares y de la carretera de Andalucía,
+  y la barriada vivió bombardeos, evacuaciones y años de trinchera cercana. La posguerra
+  la encontró golpeada y, muy pronto, desbordada.</p>
+
+  <p>Porque a partir de los años cuarenta llegó la gran ola: decenas de miles de familias
+  procedentes de <strong>Andalucía, Extremadura, Castilla-La Mancha y Castilla y León</strong>
+  emigraron a Madrid huyendo del hambre rural. Sin vivienda a su alcance, levantaron
+  <strong>chabolas</strong> sobre los descampados del sur: nacieron así los núcleos de
+  <em>Orcasitas</em>, <em>La China</em> o el <em>Zofío</em>, ciudades informales de adobe
+  y uralita sin agua corriente, saneamiento ni calles pavimentadas.</p>
+
+  <p>En paralelo, el Gran Madrid del franquismo se tragó los pueblos limítrofes:
+  <strong>Carabanchel Bajo fue anexionado en 1948</strong> y <strong>Villaverde en 1954</strong>.
+  Con esas anexiones, todo el territorio del actual distrito pasó a ser, por fin,
+  <strong>Madrid capital</strong> — y Usera dio nombre a una de las nuevas demarcaciones
+  administrativas del sur.</p>
+</section>
+
+<!-- ============================ DESARROLLISMO ============================ -->
+<section id="desarrollismo" class="reveal">
+  <div class="section-label">1950–1975</div>
+  <h2>Poblados, bloques y un hospital gigante</h2>
+  <p>La respuesta oficial al chabolismo fueron los <strong>poblados de absorción y los poblados
+  dirigidos</strong> de finales de los cincuenta: actuaciones públicas de vivienda mínima que
+  realojaron a miles de familias en <em>Orcasitas</em>, <em>San Fermín</em>, <em>Almendrales</em>
+  o el <em>Zofío</em>. Eran viviendas pequeñas y de construcción modesta, pero supusieron el
+  primer urbanismo planificado del futuro distrito.</p>
+
+  <p>Los años sesenta y setenta trajeron los grandes bloques del desarrollismo, los colegios
+  y los primeros equipamientos de escala metropolitana. En <strong>1973</strong> abrió sus
+  puertas la Ciudad Sanitaria <strong>Hospital 12 de Octubre</strong>, hoy uno de los mayores
+  hospitales de España y principal empleador del distrito. En los años ochenta, la
+  <strong>línea 6 de Metro</strong> llegó al corazón del barrio con la estación de Usera,
+  cosiendo por fin el sur obrero con el resto de la ciudad.</p>
+
+  <figure class="photo">
+    <div class="frame">
+      <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Orcasitas%20estaci%C3%B3n.jpg?width=1400"
+           alt="Estación de Cercanías de Orcasitas, en el barrio remodelado"
+           loading="lazy">
+    </div>
+    <figcaption>La estación de Cercanías de Orcasitas, entre los bloques del barrio remodelado.
+    <a href="https://commons.wikimedia.org/wiki/File:Orcasitas_estaci%C3%B3n.jpg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================ LUCHA VECINAL ============================ -->
+<section id="vecinal" class="reveal">
+  <div class="section-label">1968–1986</div>
+  <h2>«Los pisos, para quien los habita»: la epopeya de Orcasitas</h2>
+  <p class="lede">Si hay un lugar donde el movimiento vecinal español ganó sus batallas
+  fundacionales, es la Meseta de Orcasitas.</p>
+
+  <p>A finales de los sesenta, los vecinos de Orcasitas —muchos de ellos antiguos chabolistas
+  que habían comprado sus parcelas a plazos— se organizaron en una de las
+  <strong>asociaciones de vecinos</strong> más combativas del país. Reclamaban lo elemental:
+  asfalto, alcantarillado, escuelas… y sobre todo <strong>no ser expulsados</strong> de los
+  terrenos que habían pagado y levantado cuando el planeamiento urbanístico amenazó con
+  echarles.</p>
+
+  <p>Su victoria jurídica ante los tribunales a finales de los setenta sentó un precedente
+  celebrado en toda España, y su pulso político dio origen al programa de
+  <strong>Barrios en Remodelación</strong> (finales de los setenta y años ochenta): una
+  operación pública sin precedentes que sustituyó chabolas y viviendas precarias por
+  <strong>barrios enteramente nuevos diseñados con los propios vecinos</strong> —Orcasitas,
+  Orcasur y otros polígonos del sur—, con el lema que hizo historia:
+  <em>realojo en el barrio, sin desarraigo</em>.</p>
+
+  <blockquote>
+    «Nosotros no pedíamos pisos: pedíamos quedarnos. El barrio era nuestro porque lo habíamos
+    hecho nosotros.»
+    <cite>Memoria del movimiento vecinal de Orcasitas</cite>
+  </blockquote>
+</section>
+
+<!-- ============================ EL DISTRITO ============================ -->
+<section id="distrito" class="reveal">
+  <div class="section-label">1987</div>
+  <h2>Nace el distrito actual</h2>
+  <p>Con la reorganización municipal de <strong>1987</strong>, Madrid quedó dividido en los
+  21 distritos actuales. Usera se consolidó como <strong>distrito número 12</strong>, con
+  siete barrios: <em>Orcasitas, Orcasur, San Fermín, Almendrales, Moscardó, Zofío y
+  Pradolongo</em> — este último bautizado por el gran parque creado en aquellos años sobre
+  antiguos descampados.</p>
+
+  <div class="photo-grid">
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Distrito%20de%20Usera%20(Madrid).svg?width=900"
+             alt="Mapa de los siete barrios del distrito de Usera"
+             loading="lazy">
+      </div>
+      <figcaption>Los siete barrios del distrito.
+      <a href="https://commons.wikimedia.org/wiki/File:Distrito_de_Usera_(Madrid).svg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+    </figure>
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Maps%20-%20ES%20-%20Madrid%20-%20Usera.PNG?width=900"
+             alt="Situación del distrito de Usera dentro del municipio de Madrid"
+             loading="lazy">
+      </div>
+      <figcaption>Usera (en rojo) dentro del municipio de Madrid.
+      <a href="https://commons.wikimedia.org/wiki/File:Maps_-_ES_-_Madrid_-_Usera.PNG">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+    </figure>
+  </div>
+
+  <p>Las décadas siguientes completaron la transformación física del sur:
+  el <strong>Parque de Pradolongo</strong> y el Parque Lineal del Manzanares verdearon los
+  bordes del distrito; en <strong>2007</strong> la línea 3 de Metro se prolongó hasta
+  Villaverde con estaciones en Almendrales, Hospital 12 de Octubre y San Fermín–Orcasur;
+  en <strong>2009</strong> se inauguró junto al río la <strong>Caja Mágica</strong> de
+  Dominique Perrault, sede del Mutua Madrid Open; y desde <strong>2011</strong>
+  <strong>Madrid Río</strong> convirtió la vieja frontera del Manzanares en el mayor
+  parque lineal de la ciudad.</p>
+
+  <div class="photo-grid">
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Parque%20de%20Pradolongo%20-%20Mayo%202008.jpg?width=900"
+             alt="Lago del Parque de Pradolongo"
+             loading="lazy">
+      </div>
+      <figcaption>El lago del Parque de Pradolongo, el «pulmón verde» del distrito.
+      <a href="https://commons.wikimedia.org/wiki/File:Parque_de_Pradolongo_-_Mayo_2008.jpg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+    </figure>
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Caja%20M%C3%A1gica-Camino%20Perales.jpg?width=900"
+             alt="La Caja Mágica, estadio de tenis de Dominique Perrault junto al Manzanares"
+             loading="lazy">
+      </div>
+      <figcaption>La Caja Mágica (2009), de Dominique Perrault, junto al Manzanares.
+      <a href="https://commons.wikimedia.org/wiki/File:Caja_M%C3%A1gica-Camino_Perales.jpg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============================ CHINATOWN ============================ -->
+<section id="chinatown" class="reveal">
+  <div class="section-label">1990 – hoy</div>
+  <h2>El Chinatown de Madrid</h2>
+  <p class="lede">La última gran metamorfosis de Usera volvió a llegar, como siempre,
+  de la mano de la inmigración.</p>
+
+  <p>Desde los años noventa, el distrito —con vivienda asequible, buen transporte y tradición
+  comercial— se convirtió en el hogar de la <strong>mayor comunidad china de España</strong>.
+  En torno a calles como Dolores Barranco o Nicolás Sánchez florecieron supermercados,
+  restaurantes, bazares, academias, gestorías y peluquerías chinas, hasta consolidar el único
+  <strong>Chinatown</strong> reconocible de la ciudad.</p>
+
+  <p>Cada febrero, el <strong>Año Nuevo Chino</strong> saca a decenas de miles de personas a
+  las calles del distrito: gran pasacalles de dragones y leones por Marcelo Usera, gastronomía,
+  y la <em>Ceremonia de la Luz</em> en el parque de Pradolongo, cuyos farolillos sobre el lago
+  se han convertido en una de las imágenes más reconocibles del Madrid contemporáneo.</p>
+
+  <div class="photo-grid">
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Cientos%20de%20farolillos%20portan%20los%20deseos%20de%20los%20asistentes%20a%20la%20Ceremonia%20de%20la%20Luz%2001.jpg?width=900"
+             alt="Farolillos durante la Ceremonia de la Luz del Año Nuevo Chino en el parque de Pradolongo"
+             loading="lazy">
+      </div>
+      <figcaption>Ceremonia de la Luz del Año Nuevo Chino en Pradolongo.
+      <a href="https://commons.wikimedia.org/wiki/File:Cientos_de_farolillos_portan_los_deseos_de_los_asistentes_a_la_Ceremonia_de_la_Luz_01.jpg">Wikimedia Commons</a> (Ayto. de Madrid), CC BY.</figcaption>
+    </figure>
+    <figure class="photo">
+      <div class="frame">
+        <img src="https://commons.wikimedia.org/wiki/Special:FilePath/Jardin%20Bot%C3%A1nico%20Parque%20de%20Pradolongo.jpg?width=900"
+             alt="Jardín botánico del Parque de Pradolongo"
+             loading="lazy">
+      </div>
+      <figcaption>El jardín botánico de Pradolongo, escenario de la fiesta de la primavera.
+      <a href="https://commons.wikimedia.org/wiki/File:Jardin_Bot%C3%A1nico_Parque_de_Pradolongo.jpg">Wikimedia Commons</a>, CC BY-SA.</figcaption>
+    </figure>
+  </div>
+
+  <p>Hoy Usera es uno de los distritos más jóvenes y diversos de Madrid: al legado chino se
+  suman comunidades latinoamericanas, magrebíes y de media Europa, sobre el sustrato de
+  aquellas familias andaluzas, extremeñas y castellanas que lo levantaron. Los planes de
+  reequilibrio territorial del sur y la transformación del eje del Manzanares apuntan
+  al siguiente capítulo de una historia que nunca ha dejado de escribirse.</p>
+</section>
+
+<!-- ============================ POBLACIÓN ============================ -->
+<section id="poblacion" class="reveal">
+  <div class="section-label">Los números</div>
+  <h2>Un siglo de crecimiento</h2>
+
+  <div class="card viz-root" id="viz-pop">
+    <div class="viz-title">Población del actual territorio de Usera, 1900–2024</div>
+    <div class="viz-sub">Habitantes (estimaciones aproximadas a partir de censos y padrón)</div>
+    <svg id="chart-pop" viewBox="0 0 860 340" role="img"
+         aria-label="Gráfico de líneas: la población del territorio de Usera pasa de unos pocos miles en 1900 a unos 141.000 habitantes en 2024, con máximos en los años setenta y un leve descenso en los noventa."></svg>
+    <details class="data-table">
+      <summary>Ver datos en tabla</summary>
+      <table id="tabla-pop" aria-label="Población por año">
+        <thead><tr><th>Año</th><th>Habitantes (aprox.)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </details>
+    <p class="note">Cifras orientativas: hasta 1948–1954 corresponden a los núcleos de los
+    términos de Villaverde y Carabanchel que hoy forman el distrito.</p>
+  </div>
+</section>
+
+<!-- ============================ BARRIOS ============================ -->
+<section id="barrios" class="reveal">
+  <div class="section-label">El distrito, barrio a barrio</div>
+  <h2>Siete barrios, siete historias</h2>
+  <div class="barrios-grid sans">
+    <div class="card barrio">
+      <div class="num">12.1</div><h3>Orcasitas</h3>
+      <p>Del gran poblado chabolista a barrio-símbolo del movimiento vecinal: la Meseta
+      remodelada en los ochenta con y para sus vecinos.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.2</div><h3>Orcasur</h3>
+      <p>Poblado de absorción de los años cincuenta, reconstruido en la remodelación de los
+      ochenta junto al eje de la avenida de Andalucía.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.3</div><h3>San Fermín</h3>
+      <p>Antiguo poblado junto al Manzanares, hoy asomado al Parque Lineal, la Caja Mágica
+      y Madrid Río. Fiestas con sanfermines castizos incluidos.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.4</div><h3>Almendrales</h3>
+      <p>Entre el 12 de Octubre y las calles de la familia Usera; nombre heredado de los
+      almendros de las viejas huertas.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.5</div><h3>Moscardó</h3>
+      <p>El corazón histórico: la barriada original de Marcelo Usera y el eje comercial
+      del distrito, hoy también centro del Chinatown madrileño.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.6</div><h3>Zofío</h3>
+      <p>De caseríos y chabolas a barrio residencial junto a Plaza Elíptica; su curioso
+      nombre proviene de un antiguo paraje rural.</p>
+    </div>
+    <div class="card barrio">
+      <div class="num">12.7</div><h3>Pradolongo</h3>
+      <p>El barrio más nuevo, nacido en torno al gran parque de los años ochenta que le
+      da nombre: el pulmón verde de Usera.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================ FOOTER ============================ -->
+<footer>
+  <div class="wrap">
+    <h4>Fuentes y créditos</h4>
+    <ul>
+      <li>Textos: síntesis divulgativa a partir de la historiografía general sobre el sur de Madrid
+      (anexiones de 1948–1954, poblados de absorción y dirigidos, programa de Barrios en
+      Remodelación, división distrital de 1987).</li>
+      <li>Fotografías e imágenes: <a href="https://commons.wikimedia.org/">Wikimedia Commons</a>,
+      bajo sus respectivas licencias (enlazadas en cada pie de foto).</li>
+      <li>Mapa interactivo: <a href="https://leafletjs.com/">Leaflet</a> ·
+      © colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>.</li>
+      <li>Mapas de evolución y gráfico de población: elaboración propia (esquemáticos y
+      orientativos).</li>
+    </ul>
+    <p style="margin-top:16px">Distrito de Usera, Madrid · Página divulgativa sin ánimo de lucro.</p>
+  </div>
+</footer>
+
+<div class="viz-tooltip" id="tooltip"></div>
+
+<script>
+/* ================= Fallback de imágenes ================= */
+document.querySelectorAll('figure.photo img').forEach(function (img) {
+  img.addEventListener('error', function () {
+    var fb = document.createElement('div');
+    fb.className = 'img-fallback';
+    fb.textContent = 'Imagen no disponible sin conexión — ver enlace del pie de foto.';
+    img.replaceWith(fb);
+  });
+});
+
+/* ================= Aparición al hacer scroll ================= */
+(function () {
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('on'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) { e.target.classList.add('on'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+})();
+
+/* ================= Mapa Leaflet ================= */
+window.addEventListener('load', function () {
+  if (typeof L === 'undefined') return; // sin red: se queda el aviso
+
+  var el = document.getElementById('mapa-usera');
+  el.innerHTML = '';
+  var map = L.map(el, { scrollWheelZoom: false }).setView([40.379, -3.702], 13.4);
+
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+
+  // Límite aproximado del distrito (simplificado)
+  L.polygon([
+    [40.4005, -3.7135], [40.3970, -3.7000], [40.3925, -3.6900], [40.3855, -3.6810],
+    [40.3760, -3.6780], [40.3650, -3.6800], [40.3560, -3.6880], [40.3548, -3.7020],
+    [40.3580, -3.7170], [40.3680, -3.7220], [40.3780, -3.7220], [40.3852, -3.7195],
+    [40.3930, -3.7140]
+  ], {
+    color: '#b4471f', weight: 2, dashArray: '6 6', fill: true,
+    fillColor: '#b4471f', fillOpacity: 0.05
+  }).addTo(map).bindPopup('<b>Distrito de Usera</b>Límite aproximado (esquemático).');
+
+  function marker(lat, lng, color, title, text) {
+    L.circleMarker([lat, lng], {
+      radius: 8, color: '#ffffff', weight: 2,
+      fillColor: color, fillOpacity: 0.95
+    }).addTo(map).bindPopup('<b>' + title + '</b>' + text);
+  }
+
+  var HIST = '#b4471f', EQUIP = '#2a78d6', VERDE = '#4f8a3d';
+
+  marker(40.3999, -3.7115, HIST, 'Puente de Toledo (1718–1732)',
+    'La puerta histórica entre Madrid y el campo del sur, obra de Pedro de Ribera.');
+  marker(40.3895, -3.7060, HIST, 'Calle de Marcelo Usera',
+    'Eje de la parcelación de 1925 que dio origen y nombre al barrio. Hoy, corazón comercial y del Chinatown.');
+  marker(40.3705, -3.7135, HIST, 'Meseta de Orcasitas',
+    'Del chabolismo de posguerra a barrio remodelado (años 80) por la lucha vecinal.');
+  marker(40.3665, -3.7050, HIST, 'Orcasur',
+    'Poblado de absorción (años 50) reconstruido en el programa de Barrios en Remodelación.');
+  marker(40.3690, -3.6930, HIST, 'San Fermín',
+    'Antiguo poblado junto al río, hoy asomado al Parque Lineal del Manzanares.');
+  marker(40.3880, -3.7085, HIST, 'Chinatown madrileño',
+    'En torno a Dolores Barranco y Nicolás Sánchez: la mayor comunidad china de España.');
+
+  marker(40.3757, -3.6953, EQUIP, 'Hospital 12 de Octubre (1973)',
+    'Uno de los mayores hospitales de España y gran motor de empleo del distrito.');
+  marker(40.3690, -3.6850, EQUIP, 'Caja Mágica (2009)',
+    'Estadio de tenis de Dominique Perrault junto al Manzanares; sede del Mutua Madrid Open.');
+  marker(40.3852, -3.7186, EQUIP, 'Plaza Elíptica',
+    'Puerta noroeste del distrito e intercambiador de transportes (líneas 6 y 11 de Metro).');
+
+  marker(40.3765, -3.7100, VERDE, 'Parque de Pradolongo',
+    'El pulmón verde de Usera (años 80) y escenario de la Ceremonia de la Luz del Año Nuevo Chino.');
+  marker(40.3980, -3.7040, VERDE, 'Madrid Río / Manzanares',
+    'La vieja frontera del río, convertida desde 2011 en el gran parque lineal de la ciudad.');
+});
+
+/* ================= Gráfico de población (SVG propio) ================= */
+(function () {
+  var datos = [
+    [1900,   1500], [1920,   4000], [1930,  15000], [1940,  35000],
+    [1950,  60000], [1960,  90000], [1970, 120000], [1981, 127000],
+    [1991, 116000], [2001, 117000], [2011, 134000], [2024, 141000]
+  ];
+
+  // Tabla accesible
+  var tbody = document.querySelector('#tabla-pop tbody');
+  datos.forEach(function (d) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + d[0] + '</td><td>' + d[1].toLocaleString('es-ES') + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  var svg = document.getElementById('chart-pop');
+  var NS = 'http://www.w3.org/2000/svg';
+  var W = 860, H = 340, M = { top: 24, right: 120, bottom: 34, left: 64 };
+  var iw = W - M.left - M.right, ih = H - M.top - M.bottom;
+  var x0 = 1900, x1 = 2024, y1 = 150000;
+
+  function X(a) { return M.left + (a - x0) / (x1 - x0) * iw; }
+  function Y(v) { return M.top + ih - (v / y1) * ih; }
+  function mk(tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    svg.appendChild(n);
+    return n;
+  }
+
+  // Rejilla y eje Y (recesivos)
+  [0, 50000, 100000, 150000].forEach(function (v) {
+    mk('line', { 'class': 'gridline', x1: M.left, x2: M.left + iw, y1: Y(v), y2: Y(v) });
+    var t = mk('text', { 'class': 'axis-label', x: M.left - 8, y: Y(v) + 4, 'text-anchor': 'end' });
+    t.textContent = v === 0 ? '0' : (v / 1000) + ' mil';
+  });
+  // Eje X
+  [1900, 1925, 1950, 1975, 2000, 2024].forEach(function (a) {
+    var t = mk('text', { 'class': 'axis-label', x: X(a), y: M.top + ih + 20, 'text-anchor': 'middle' });
+    t.textContent = a;
+  });
+
+  // Área + línea
+  var line = datos.map(function (d, i) { return (i ? 'L' : 'M') + X(d[0]) + ',' + Y(d[1]); }).join('');
+  mk('path', { 'class': 'area', d: line + 'L' + X(x1) + ',' + Y(0) + 'L' + X(x0) + ',' + Y(0) + 'Z' });
+  mk('path', { 'class': 'serie', d: line });
+
+  // Puntos
+  datos.forEach(function (d) {
+    mk('circle', { 'class': 'punto', cx: X(d[0]), cy: Y(d[1]), r: 4 });
+  });
+
+  // Etiqueta directa del último punto
+  var last = datos[datos.length - 1];
+  var lbl = mk('text', { 'class': 'direct-label', x: X(last[0]) - 2, y: Y(last[1]) - 14, 'text-anchor': 'end' });
+  lbl.textContent = '≈141.000 hab.';
+
+  // Crosshair + tooltip
+  var ch = mk('line', { 'class': 'crosshair', y1: M.top, y2: M.top + ih, x1: -10, x2: -10, opacity: 0 });
+  var tip = document.getElementById('tooltip');
+
+  svg.addEventListener('mousemove', function (ev) {
+    var r = svg.getBoundingClientRect();
+    var px = (ev.clientX - r.left) * (W / r.width);
+    var year = x0 + (px - M.left) / iw * (x1 - x0);
+    var best = datos[0];
+    datos.forEach(function (d) { if (Math.abs(d[0] - year) < Math.abs(best[0] - year)) best = d; });
+    var sx = X(best[0]);
+    ch.setAttribute('x1', sx); ch.setAttribute('x2', sx); ch.setAttribute('opacity', 1);
+    tip.innerHTML = '<b>' + best[0] + '</b> · ' + best[1].toLocaleString('es-ES') + ' hab.';
+    tip.style.left = (r.left + window.scrollX + sx * (r.width / W)) + 'px';
+    tip.style.top = (r.top + window.scrollY + Y(best[1]) * (r.height / H)) + 'px';
+    tip.style.opacity = 1;
+  });
+  svg.addEventListener('mouseleave', function () {
+    ch.setAttribute('opacity', 0);
+    tip.style.opacity = 0;
+  });
+})();
+</script>
+
+</body>
+</html>
